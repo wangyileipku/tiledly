@@ -16,9 +16,11 @@ Tiledly is a mobile-first, daily speed challenge browser game built for high vir
 ## 🚀 Running Locally
 Open `index.html` in any modern web browser or serve via:
 ```bash
-npx serve .
+node server.mjs
 # or
 python3 -m http.server 3000
+# or
+npx serve .
 ```
 Open `http://localhost:3000`.
 
