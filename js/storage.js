@@ -1,4 +1,4 @@
-const PREFIX = 'gridclash_';
+const PREFIX = 'tiledly_';
 
 function getFormattedDate(date) {
   const d = date || new Date();

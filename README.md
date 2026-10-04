@@ -1,8 +1,8 @@
-# ⚡ GridClash
+# ⚡ Tiledly
 
 > **One daily challenge. Tap as fast as you can. Race against the world.**
 
-GridClash is a mobile-first, daily speed challenge browser game built for high virality, instant play, and passive monetization.
+Tiledly is a mobile-first, daily speed challenge browser game built for high virality, instant play, and passive monetization.
 
 ## 🎮 Game Features
 - **Daily Challenge**: Everyone worldwide plays the exact same grid every day, seeded by date.

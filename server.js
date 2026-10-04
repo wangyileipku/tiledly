@@ -48,5 +48,5 @@ const server = http.createServer((req, res) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`⚡ GridClash server is running at http://localhost:${PORT}/`);
+  console.log(`⚡ Tiledly server is running at http://localhost:${PORT}/`);
 });

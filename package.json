@@ -1,8 +1,8 @@
 {
-  "name": "gridclash",
+  "name": "tiledly",
   "version": "1.0.0",
   "type": "module",
-  "description": "GridClash - Daily Speed Challenge Battle Royale",
+  "description": "Tiledly - Daily Speed Challenge Battle Royale",
   "scripts": {
     "start": "node server.js"
   }
