@@ -4,6 +4,6 @@
   "type": "module",
   "description": "GridClash - Daily Speed Challenge Battle Royale",
   "scripts": {
-    "start": "npx serve ."
+    "start": "node server.js"
   }
 }
