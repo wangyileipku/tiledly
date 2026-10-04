@@ -4,6 +4,7 @@
   "type": "module",
   "description": "Tiledly - Daily Speed Challenge Battle Royale",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "build": "echo 'Build complete'"
   }
 }
