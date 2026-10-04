@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta property="og:title" content="GridClash — Daily Speed Challenge">
+    <meta property="og:description" content="One daily challenge. Tap as fast as you can. Race against the world.">
+    <title>GridClash — Daily Speed Challenge</title>
+    <!-- Favicon emoji via SVG data URI -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚡</text></svg>">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Screen 1: Home -->
+        <div id="screen-home" class="screen active">
+            <div class="logo"><span class="logo-icon">⚡</span> GridClash</div>
+            <div id="home-mode-emoji">⚡</div>
+            <h2 id="home-mode-name">Classic Speed</h2>
+            <p id="home-mode-desc">Tap 1 to 25 as fast as you can.</p>
+            <div id="home-streak">🔥 0 Day Streak</div>
+            
+            <button id="home-play-btn" class="btn-primary btn-large">Play Today's Challenge</button>
+            
+            <div id="home-already-played" class="already-played hidden">
+                <p>You've already played today!</p>
+                <button id="home-view-result-btn" class="btn-primary">View Result</button>
+            </div>
+            
+            <button id="home-practice-btn" class="btn-ghost mb-2">🎯 Practice Mode</button>
+            
+            <footer class="home-footer text-muted">
+                <button id="home-how-to-play-btn" class="btn-link text-muted">How to Play</button>
+            </footer>
+        </div>
+
+        <!-- Screen 2: Countdown -->
+        <div id="screen-countdown" class="screen flex-center flex-column">
+            <div id="countdown-number" class="countdown-number">3</div>
+            <div id="countdown-mode" class="text-accent mt-2">Classic Speed</div>
+        </div>
+
+        <!-- Screen 3: Memorize -->
+        <div id="screen-memorize" class="screen flex-column">
+            <div class="memorize-header flex-center flex-column mb-2 mt-3">
+                <h2 class="text-warning mb-1">Memorize the grid!</h2>
+                <div id="memorize-timer" class="timer text-warning">5.00s</div>
+            </div>
+            <div id="memorize-grid" class="grid-container"></div>
+        </div>
+
+        <!-- Screen 4: Game -->
+        <div id="screen-game" class="screen flex-column">
+            <div class="game-header p-2">
+                <div id="game-mode-info">⚡ Classic</div>
+                <div id="game-timer" class="timer">0.00s</div>
+            </div>
+            
+            <div id="game-target" class="game-target hidden"></div>
+            
+            <div class="flex-center flex-1 w-100">
+                <div id="game-grid" class="grid-container"></div>
+            </div>
+            
+            <div class="flex-center w-100 mb-1">
+                <button id="game-peek-btn" class="btn-peek hidden">👁 Peek (-2s penalty)</button>
+            </div>
+
+            <div class="game-footer p-2 text-muted">
+                <div id="game-progress">0/25</div>
+                <div id="game-mistakes">❌ 0</div>
+            </div>
+        </div>
+
+        <!-- Screen 5: Result -->
+        <div id="screen-result" class="screen flex-column flex-center p-2">
+            <div class="result-header mb-2 flex-center flex-column">
+                <div class="result-trophy mb-1" style="font-size: 48px;">🏆</div>
+                <h2>Challenge Complete!</h2>
+            </div>
+            
+            <div class="result-stats mb-3 w-100 max-w-400">
+                <div class="stat">
+                    <span class="stat-label">Time</span>
+                    <div id="result-time" class="stat-value text-accent">0.00s</div>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Score</span>
+                    <div id="result-score" class="stat-value">0</div>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Accuracy</span>
+                    <div id="result-accuracy" class="stat-value">100%</div>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Mistakes</span>
+                    <div id="result-mistakes" class="stat-value text-error">0</div>
+                </div>
+            </div>
+            
+            <div class="result-rank w-100 max-w-400 mb-3">
+                <div class="flex-between mb-1">
+                    <span id="result-rank-text">#0 / 0</span>
+                    <span id="result-rank-percentile" class="text-success">Top 0%</span>
+                </div>
+                <div class="rank-bar">
+                    <div id="result-rank-fill" class="rank-bar-fill" style="width: 0%;"></div>
+                </div>
+            </div>
+            
+            <div id="result-streak-display" class="mb-3">🔥 0 Day Streak</div>
+            
+            <canvas id="result-share-canvas" width="600" height="340" style="display: none;"></canvas>
+            
+            <div class="result-actions w-100 max-w-400 flex-column gap-2">
+                <button id="result-share-btn" class="btn-primary w-100">📋 Share Result</button>
+                <button id="result-replay-btn" class="btn-secondary w-100">🎬 Watch Battle Replay</button>
+                <button id="result-home-btn" class="btn-ghost w-100">🏠 Back to Home</button>
+            </div>
+        </div>
+
+        <!-- Screen 6: Replay -->
+        <div id="screen-replay" class="screen flex-column flex-center p-2">
+            <div class="replay-header mb-2 text-center">
+                <h2>⚔️ Battle Royale</h2>
+                <div id="replay-status" class="text-muted mt-1">92 players remaining...</div>
+            </div>
+            
+            <canvas id="replay-canvas" class="mb-3 w-100 max-w-400" style="max-height: 400px;"></canvas>
+            
+            <button id="replay-back-btn" class="btn-secondary max-w-400 w-100">← Back to Results</button>
+        </div>
+        
+        <!-- Modal: How to Play -->
+        <div id="modal-how-to-play" class="modal-overlay hidden flex-center">
+            <div class="modal-card p-3 max-w-400">
+                <div class="flex-between mb-2">
+                    <h3 class="text-accent">⚡ How to Play</h3>
+                    <button id="modal-close-btn" class="btn-icon">✕</button>
+                </div>
+                <div class="modal-body text-muted mb-3" style="font-size: 15px; line-height: 1.6;">
+                    <p class="mb-2"><strong class="text-white">One challenge per day.</strong> Everyone worldwide plays the exact same grid.</p>
+                    <p class="mb-2"><strong class="text-accent">🧮 Sum Hunt:</strong> Tap pairs of numbers that add up to the target number. Clear all pairs as fast as you can without mistakes.</p>
+                    <p class="mb-2"><strong class="text-warning">🧠 Memory Grid:</strong> You have 4 seconds to memorize the grid. Then tap numbers in ascending order from memory!</p>
+                    <p><strong class="text-success">⚔️ Battle Royale:</strong> Watch your ghost race in real time against 99 other players to see where you rank!</p>
+                </div>
+                <button id="modal-got-it-btn" class="btn-primary w-100">Got it!</button>
+            </div>
+        </div>
+
+        <!-- Toast Notification -->
+        <div id="share-toast" class="toast hidden flex-center">
+            Copied to clipboard!
+        </div>
+    </div>
+    
+    <script type="module" src="js/app.js"></script>
+</body>
+</html>

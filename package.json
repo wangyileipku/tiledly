@@ -1,0 +1,9 @@
+{
+  "name": "gridclash",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "GridClash - Daily Speed Challenge Battle Royale",
+  "scripts": {
+    "start": "npx serve ."
+  }
+}
