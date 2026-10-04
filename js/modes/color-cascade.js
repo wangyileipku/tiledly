@@ -1,3 +1,5 @@
+import { calculateScore } from '../utils.js';
+
 const BASE_COLORS = [
   { id: 'red', name: 'Red', hex: '#ff3366', emoji: '🔴' },
   { id: 'orange', name: 'Orange', hex: '#ff7700', emoji: '🟠' },
@@ -260,8 +262,7 @@ export const ColorCascadeMode = {
       ? 100
       : Math.round((gameState.found / (gameState.found + gameState.mistakes)) * 100);
 
-    const scoreBase = Math.max(0, 10000 - elapsedMs / 6) * (1 - gameState.mistakes * 0.05);
-    const score = Math.max(0, Math.min(10000, Math.round(scoreBase)));
+    const score = calculateScore(elapsedMs, gameState.mistakes);
 
     return {
       time: elapsedMs,

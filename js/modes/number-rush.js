@@ -1,3 +1,5 @@
+import { calculateScore } from '../utils.js';
+
 export const NumberRushMode = {
   id: 'number-rush',
   name: 'Number Rush',
@@ -132,8 +134,7 @@ export const NumberRushMode = {
       ? 100
       : Math.round((gameState.found / (gameState.found + gameState.mistakes)) * 100);
 
-    const scoreBase = Math.max(0, 10000 - elapsedMs / 5) * (1 - gameState.mistakes * 0.04);
-    const score = Math.max(0, Math.min(10000, Math.round(scoreBase)));
+    const score = calculateScore(elapsedMs, gameState.mistakes);
 
     return {
       time: elapsedMs,

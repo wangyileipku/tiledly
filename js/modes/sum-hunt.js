@@ -1,3 +1,5 @@
+import { calculateScore } from '../utils.js';
+
 export const SumHuntMode = {
   id: 'sum-hunt',
   name: 'Sum Hunt',
@@ -375,8 +377,7 @@ export const SumHuntMode = {
       ? 100
       : Math.round((cleared / (cleared + gameState.mistakes)) * 100);
 
-    const scoreBase = Math.max(0, 10000 - elapsedMs / 8) * (1 - gameState.mistakes * 0.04);
-    const score = Math.max(0, Math.min(10000, Math.round(scoreBase)));
+    const score = calculateScore(elapsedMs, gameState.mistakes);
 
     return {
       time: elapsedMs,

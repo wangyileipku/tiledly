@@ -76,3 +76,20 @@ export function clamp(val, min, max) {
 export function delay(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
+
+export function calculateScore(elapsedMs, mistakes = 0, extraPenaltyFactor = 0, maxTimeMs = 180000) {
+  // 1. Guaranteed completion award for solving the entire grid
+  const completionBase = 3000;
+  
+  // 2. Speed bonus: up to 7,000 pts scaling gracefully over 3 minutes
+  const timeRatio = Math.min(1, Math.max(0, elapsedMs / maxTimeMs));
+  const speedBonus = Math.round(7000 * Math.pow(1 - timeRatio, 1.25));
+  
+  const rawScore = completionBase + speedBonus;
+  
+  // 3. Accuracy & penalty multiplier: each mistake deducts 4%
+  const penalty = (mistakes * 0.04) + extraPenaltyFactor;
+  const accuracyMultiplier = Math.max(0.1, 1 - penalty);
+  
+  return Math.max(500, Math.min(10000, Math.round(rawScore * accuracyMultiplier)));
+}

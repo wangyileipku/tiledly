@@ -1,3 +1,5 @@
+import { calculateScore } from '../utils.js';
+
 const PAIR_EMOJIS = ['⚡', '🔥', '💎', '🚀', '🍀', '👑', '🎯', '🔮', '🍕', '🎸', '🐱', '🏆'];
 
 export const MemoryGridMode = {
@@ -305,8 +307,7 @@ export const MemoryGridMode = {
       ? 100
       : Math.round((found / (found + gameState.mistakes)) * 100);
 
-    const scoreBase = Math.max(0, 10000 - adjustedTime / 5) * (1 - gameState.mistakes * 0.03) * (1 - gameState.peeks * 0.1);
-    const score = Math.max(0, Math.min(10000, Math.round(scoreBase)));
+    const score = calculateScore(adjustedTime, gameState.mistakes, (gameState.peeks || 0) * 0.08);
 
     return {
       time: adjustedTime,

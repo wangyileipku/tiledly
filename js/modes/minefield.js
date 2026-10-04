@@ -1,3 +1,5 @@
+import { calculateScore } from '../utils.js';
+
 export const MinefieldMode = {
   id: 'minefield',
   name: 'Minefield',
@@ -216,8 +218,7 @@ export const MinefieldMode = {
       ? 100
       : Math.round((gameState.found / (gameState.found + gameState.mistakes)) * 100);
 
-    const scoreBase = Math.max(0, 10000 - totalTime / 6) * (1 - gameState.mistakes * 0.05) * (1 - gameState.bombsHit * 0.1);
-    const score = Math.max(0, Math.min(10000, Math.round(scoreBase)));
+    const score = calculateScore(totalTime, gameState.mistakes, (gameState.bombsHit || 0) * 0.10);
 
     return {
       time: totalTime,

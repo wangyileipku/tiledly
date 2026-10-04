@@ -1,3 +1,5 @@
+import { calculateScore } from '../utils.js';
+
 function generatePemdasEquation(target, rng) {
   // Generate expressions with operator precedence that evaluate to target
   if (target === 1) return '3×2-5';
@@ -305,8 +307,7 @@ export const MathBlitzMode = {
       ? 100
       : Math.round((gameState.found / (gameState.found + gameState.mistakes)) * 100);
 
-    const scoreBase = Math.max(0, 10000 - elapsedMs / 6) * (1 - gameState.mistakes * 0.04);
-    const score = Math.max(0, Math.min(10000, Math.round(scoreBase)));
+    const score = calculateScore(elapsedMs, gameState.mistakes);
 
     return {
       time: elapsedMs,
