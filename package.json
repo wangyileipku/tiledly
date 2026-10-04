@@ -1,0 +1,10 @@
+{
+  "name": "tiledly",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Tiledly - Daily Speed Challenge Battle Royale",
+  "scripts": {
+    "start": "node server.mjs",
+    "test": "node test.js"
+  }
+}

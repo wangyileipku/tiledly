@@ -4,10 +4,16 @@
 
 Tiledly is a mobile-first, daily speed challenge browser game built for high virality, instant play, and passive monetization.
 
-## 🎮 Game Features
-- **Daily Challenge**: Everyone worldwide plays the exact same grid every day, seeded by date.
-- **Sum Hunt (🧮)**: Find pairs that sum to the target number under intense time pressure.
-- **Memory Grid (🧠)**: Memorize the 5×5 grid in 4 seconds, then tap numbers in ascending order from memory.
+## 🎮 7-Day Challenge Schedule
+- **Monday**: 🧮 **Sum Hunt** — Find pairs that sum to the target number under speed pressure.
+- **Tuesday**: 🔢 **Number Rush** — Pure reflex sprint tapping numbers 1 to 25 in order.
+- **Wednesday**: 🎨 **Color Cascade** — Cognitive pattern cycle: Red → Orange → Yellow → Green → Blue.
+- **Thursday**: 🧠 **Memory Grid** — Memorize numbers in 4s, then tap in order from memory.
+- **Friday**: 💣 **Minefield** — Avoid 5 hidden bombs while safely clearing numbers 1 to 20!
+- **Saturday**: ⚡ **Math Blitz** — Solve 25 equations and tap in order of their answers (1 to 25).
+- **Sunday**: 🔤 **Alpha Hunt** — Hunt and tap letters A through Y in alphabetical sequence.
+
+## 🏆 Key Features
 - **⚔️ Battle Royale Replay**: Watch an async replay of your run against 99 other player ghosts with real-time eliminations.
 - **📋 Share Cards**: Wordle-style shareable cards and canvas image generation with streak, percentile, and stats.
 - **🎯 Practice Mode**: Unlimited randomized rounds to practice without affecting daily ranking.

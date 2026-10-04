@@ -366,6 +366,26 @@ button {
     pointer-events: none;
 }
 
+.cell.math-tile {
+    font-size: 15px;
+    letter-spacing: -0.5px;
+    font-weight: 600;
+}
+
+.cell.color-tile {
+    font-size: 26px;
+}
+
+.cell.bomb-preview {
+    background-color: rgba(255, 51, 102, 0.25);
+    border-color: #ff3366;
+    animation: pulse 1s infinite;
+}
+
+.cell.disguised-cell {
+    background-color: #1a1a2e;
+}
+
 /* Result Screen */
 .result-stats {
     display: grid;

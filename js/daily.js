@@ -1,27 +1,33 @@
 import { getDailySeed, getDayOfWeek, SeededRandom } from './utils.js';
 import { SumHuntMode } from './modes/sum-hunt.js';
+import { NumberRushMode } from './modes/number-rush.js';
+import { ColorCascadeMode } from './modes/color-cascade.js';
 import { MemoryGridMode } from './modes/memory-grid.js';
+import { MinefieldMode } from './modes/minefield.js';
+import { MathBlitzMode } from './modes/math-blitz.js';
+import { AlphaHuntMode } from './modes/alpha-hunt.js';
+
+// 7-Day Weekly Schedule:
+// 0: Sunday    🔤 Alpha Hunt
+// 1: Monday    🧮 Sum Hunt
+// 2: Tuesday   🔢 Number Rush
+// 3: Wednesday 🎨 Color Cascade
+// 4: Thursday  🧠 Memory Grid
+// 5: Friday    💣 Minefield
+// 6: Saturday  ⚡ Math Blitz
+export const ALL_MODES = {
+  0: AlphaHuntMode,
+  1: SumHuntMode,
+  2: NumberRushMode,
+  3: ColorCascadeMode,
+  4: MemoryGridMode,
+  5: MinefieldMode,
+  6: MathBlitzMode
+};
 
 export function getTodayMode() {
   const day = getDayOfWeek();
-  // Mode schedule:
-  // Monday (1): Sum Hunt
-  // Tuesday (2): Sum Hunt
-  // Wednesday (3): Memory Grid
-  // Thursday (4): Sum Hunt 
-  // Friday (5): Memory Grid
-  // Saturday (6): Sum Hunt
-  // Sunday (0): Memory Grid
-  const schedule = {
-    0: MemoryGridMode,
-    1: SumHuntMode,
-    2: SumHuntMode,
-    3: MemoryGridMode,
-    4: SumHuntMode,
-    5: MemoryGridMode,
-    6: SumHuntMode
-  };
-  return schedule[day];
+  return ALL_MODES[day] || SumHuntMode;
 }
 
 export function getTodayChallenge() {
@@ -32,8 +38,8 @@ export function getTodayChallenge() {
   return { mode, challenge };
 }
 
-export function getModeInfo() {
-  const mode = getTodayMode();
+export function getModeInfo(modeObj) {
+  const mode = modeObj || getTodayMode();
   return {
     id: mode.id,
     name: mode.name,

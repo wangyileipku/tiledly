@@ -1,5 +1,5 @@
 import { Storage } from './storage.js';
-import { getTodayMode, getTodayChallenge, getModeInfo, getDailyNumber } from './daily.js';
+import { getTodayMode, getTodayChallenge, getModeInfo, getDailyNumber, ALL_MODES } from './daily.js';
 import { GameEngine } from './engine.js';
 import { getDailySeed, SeededRandom, formatTime, formatNumber, delay } from './utils.js';
 import { generateShareCard, shareResult } from './share.js';
@@ -126,13 +126,24 @@ function setupEventListeners() {
 }
 
 async function startGame(isPractice = false) {
+  if (isPractice) {
+    const modeKeys = Object.keys(ALL_MODES);
+    const randomKey = modeKeys[Math.floor(Math.random() * modeKeys.length)];
+    currentMode = ALL_MODES[randomKey];
+    const rng = new SeededRandom(Date.now());
+    currentChallenge = currentMode.generateChallenge(rng);
+  } else {
+    currentMode = getTodayMode();
+    const dailyChal = getTodayChallenge();
+    currentChallenge = dailyChal.challenge;
+  }
+
   showScreen('screen-countdown');
   const cdNum = document.getElementById('countdown-number');
   const cdMode = document.getElementById('countdown-mode');
   
-  currentMode = getTodayMode();
   if (cdMode) {
-      cdMode.textContent = `${currentMode.emoji} ${currentMode.name}`;
+    cdMode.textContent = `${currentMode.emoji} ${currentMode.name}`;
   }
   
   cdNum.textContent = '3';
@@ -144,25 +155,16 @@ async function startGame(isPractice = false) {
   cdNum.textContent = 'GO!';
   await delay(400);
   
-  const dailyChal = getTodayChallenge();
-  
-  if (isPractice) {
-    const rng = new SeededRandom(Date.now());
-    currentChallenge = currentMode.generateChallenge(rng);
-  } else {
-    currentChallenge = dailyChal.challenge;
-  }
-  
   currentGameState = currentMode.createGameState(currentChallenge);
   
-  if (currentMode.id === 'memory-grid') {
+  if (currentMode.memorizeDuration) {
     showScreen('screen-memorize');
     
     if (tempEngine) tempEngine.destroy();
     tempEngine = new GameEngine(document.getElementById('memorize-grid'), document.getElementById('memorize-timer'));
     tempEngine.setupGrid(currentChallenge.grid);
     
-    let secondsLeft = (currentMode.memorizeDuration || 4000) / 1000;
+    let secondsLeft = (currentMode.memorizeDuration) / 1000;
     const timerEl = document.getElementById('memorize-timer');
     timerEl.textContent = secondsLeft.toFixed(1) + 's';
     
@@ -175,46 +177,71 @@ async function startGame(isPractice = false) {
       }
     }, 100);
     
-    await delay(currentMode.memorizeDuration || 4000);
+    await delay(currentMode.memorizeDuration);
     clearInterval(interval);
     
     tempEngine.destroy();
     tempEngine = null;
     
     showScreen('screen-game');
-    document.getElementById('game-peek-btn').classList.remove('hidden');
-    document.getElementById('game-target').classList.add('hidden');
     
     if (currentEngine) currentEngine.destroy();
     currentEngine = new GameEngine(document.getElementById('game-grid'), document.getElementById('game-timer'));
-    currentEngine.setupGrid(currentChallenge.grid);
     
-    const count = currentEngine.getCellCount();
-    for (let i = 0; i < count; i++) {
-      const el = currentEngine.getCellElement(i);
-      if (el) el.classList.add('hidden-cell');
+    if (currentMode.id === 'memory-grid') {
+      currentEngine.setupGrid(currentChallenge.grid);
+      const count = currentEngine.getCellCount();
+      for (let i = 0; i < count; i++) {
+        const el = currentEngine.getCellElement(i);
+        if (el) el.classList.add('hidden-cell');
+      }
+      document.getElementById('game-peek-btn').classList.remove('hidden');
+    } else if (currentMode.id === 'minefield') {
+      const disguisedGrid = {
+        ...currentChallenge.grid,
+        cells: currentChallenge.grid.cells.map(c => ({
+          ...c,
+          display: '?',
+          classes: ['disguised-cell']
+        }))
+      };
+      currentEngine.setupGrid(disguisedGrid);
+      document.getElementById('game-peek-btn').classList.add('hidden');
+    } else {
+      currentEngine.setupGrid(currentChallenge.grid);
+      document.getElementById('game-peek-btn').classList.add('hidden');
     }
     
     currentGameState.phase = 'play';
-    
   } else {
     showScreen('screen-game');
     document.getElementById('game-peek-btn').classList.add('hidden');
-    const targetEl = document.getElementById('game-target');
-    if (targetEl && currentChallenge.targetSum) {
-      targetEl.textContent = `🎯 Target: ${currentChallenge.targetSum}`;
-      targetEl.classList.remove('hidden');
-    } else if (targetEl) {
-      targetEl.classList.add('hidden');
-    }
     
     if (currentEngine) currentEngine.destroy();
     currentEngine = new GameEngine(document.getElementById('game-grid'), document.getElementById('game-timer'));
     currentEngine.setupGrid(currentChallenge.grid);
   }
   
+  // Target display
+  const targetEl = document.getElementById('game-target');
+  if (targetEl) {
+    if (currentMode.getTargetDisplay) {
+      targetEl.textContent = currentMode.getTargetDisplay(currentGameState, currentChallenge);
+      targetEl.classList.remove('hidden');
+    } else if (currentChallenge.targetSum) {
+      targetEl.textContent = `🎯 Target: ${currentChallenge.targetSum}`;
+      targetEl.classList.remove('hidden');
+    } else {
+      targetEl.classList.add('hidden');
+    }
+  }
+  
   document.getElementById('game-mode-info').textContent = `${currentMode.emoji} ${currentMode.name}`;
-  document.getElementById('game-progress').textContent = currentMode.id === 'memory-grid' ? `0/25 found` : `0/${currentGameState.totalPairs} cleared`;
+  if (currentMode.getProgress) {
+    document.getElementById('game-progress').textContent = currentMode.getProgress(currentGameState);
+  } else if (currentMode.id === 'sum-hunt') {
+    document.getElementById('game-progress').textContent = `0/${currentGameState.totalPairs} cleared`;
+  }
   document.getElementById('game-mistakes').textContent = '❌ 0';
   
   currentEngine.onCellTap((index, cellData) => handleCellTap(index, cellData, isPractice));
@@ -230,13 +257,29 @@ function handleCellTap(index, cellData, isPractice) {
   
   if (!result || !result.valid) return;
   
-  if (currentMode.id === 'memory-grid') {
-    if (result.action === 'correct') {
+  if (result.action === 'select') {
+    currentEngine.selectCell(index);
+  } else if (result.action === 'deselect') {
+    currentEngine.deselectCell(index);
+  } else if (result.action === 'correct') {
+    if (currentMode.id === 'memory-grid') {
       currentEngine.revealCell(index);
       const el = currentEngine.getCellElement(index);
       if (el) el.classList.remove('hidden-cell');
-      document.getElementById('game-progress').textContent = `${currentGameState.found}/${currentGameState.totalNumbers} found`;
-    } else if (result.action === 'wrong') {
+    } else if (result.indices) {
+      currentEngine.deselectAll();
+      result.indices.forEach(i => currentEngine.highlightCell(i, 'correct'));
+      setTimeout(() => {
+        result.indices.forEach(i => currentEngine.clearCell(i));
+      }, 250);
+    } else {
+      currentEngine.highlightCell(index, 'correct');
+      setTimeout(() => {
+        currentEngine.clearCell(index);
+      }, 200);
+    }
+  } else if (result.action === 'wrong') {
+    if (currentMode.id === 'memory-grid') {
       const el = currentEngine.getCellElement(index);
       if (el) {
         el.classList.remove('hidden-cell');
@@ -245,26 +288,28 @@ function handleCellTap(index, cellData, isPractice) {
           el.classList.add('hidden-cell');
         }, 500);
       }
-      document.getElementById('game-mistakes').textContent = `❌ ${currentGameState.mistakes}`;
-    }
-  } else {
-    if (result.action === 'select') {
-      currentEngine.selectCell(index);
-    } else if (result.action === 'deselect') {
-      currentEngine.deselectCell(index);
-    } else if (result.action === 'correct') {
-      currentEngine.deselectAll();
-      result.indices.forEach(i => currentEngine.highlightCell(i, 'correct'));
-      setTimeout(() => {
-        result.indices.forEach(i => currentEngine.clearCell(i));
-      }, 300);
-      document.getElementById('game-progress').textContent = `${currentGameState.clearedPairs}/${currentGameState.totalPairs} cleared`;
-    } else if (result.action === 'wrong') {
+    } else if (result.indices) {
       currentEngine.deselectAll();
       result.indices.forEach(i => currentEngine.highlightCell(i, 'wrong'));
-      document.getElementById('game-mistakes').textContent = `❌ ${currentGameState.mistakes}`;
+    } else {
+      currentEngine.highlightCell(index, 'wrong');
     }
+  } else if (result.action === 'bomb') {
+    currentEngine.highlightCell(index, 'bomb');
+    currentEngine.updateCell(index, { display: '💥', addClass: 'bomb' });
   }
+  
+  // Update target display
+  const targetEl = document.getElementById('game-target');
+  if (targetEl && currentMode.getTargetDisplay) {
+    targetEl.textContent = currentMode.getTargetDisplay(currentGameState, currentChallenge);
+  }
+  
+  // Update progress
+  if (currentMode.getProgress) {
+    document.getElementById('game-progress').textContent = currentMode.getProgress(currentGameState);
+  }
+  document.getElementById('game-mistakes').textContent = `❌ ${currentGameState.mistakes}`;
   
   if (result.isComplete) {
     endGame(isPractice);
