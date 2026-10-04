@@ -4,7 +4,9 @@ export const MinefieldMode = {
   emoji: '💣',
   description: 'Memorize the hidden bombs, then tap numbers in order without exploding!',
 
-  memorizeDuration: 2500,
+  memorizeDuration: 3500,
+  peekDuration: 2500,
+  peekPenalty: 2500,
   bombPenalty: 3000,
 
   getVariantInfo(weekNum = 1) {
@@ -191,6 +193,12 @@ export const MinefieldMode = {
         expectedValue: gameState.currentTarget
       };
     }
+  },
+
+  handlePeek(gameState) {
+    gameState.peeks = (gameState.peeks || 0) + 1;
+    gameState.penaltyMs = (gameState.penaltyMs || 0) + this.peekPenalty;
+    return { penaltyMs: gameState.penaltyMs, peeks: gameState.peeks };
   },
 
   getTargetDisplay(gameState) {

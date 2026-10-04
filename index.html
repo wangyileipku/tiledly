@@ -131,6 +131,27 @@
             <button id="replay-back-btn" class="btn-secondary max-w-400 w-100">← Back to Results</button>
         </div>
         
+        <!-- Modal: Pre-Game Briefing -->
+        <div id="modal-briefing" class="modal-overlay hidden flex-center">
+            <div class="modal-card p-3 max-w-400">
+                <div class="flex-between mb-2">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span id="briefing-emoji" style="font-size: 32px;">⚡</span>
+                        <div>
+                            <h3 id="briefing-title" class="text-accent" style="margin: 0; font-size: 20px;">Daily Challenge</h3>
+                            <span id="briefing-badge" style="font-size: 11px; color: #ffcc00; text-transform: uppercase; font-weight: bold; letter-spacing: 0.5px;">Daily Event</span>
+                        </div>
+                    </div>
+                    <button id="briefing-close-btn" class="btn-icon">✕</button>
+                </div>
+                <p id="briefing-desc" class="text-white mb-2" style="font-size: 14px; font-weight: 500;"></p>
+                <div id="briefing-rules" class="modal-body text-muted mb-3" style="font-size: 13px; line-height: 1.6; background: rgba(255,255,255,0.04); padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08);">
+                    <!-- Dynamic rules checklist -->
+                </div>
+                <button id="briefing-start-btn" class="btn-primary w-100 btn-large">🚀 Start Challenge!</button>
+            </div>
+        </div>
+
         <!-- Modal: How to Play -->
         <div id="modal-how-to-play" class="modal-overlay hidden flex-center">
             <div class="modal-card p-3 max-w-400">

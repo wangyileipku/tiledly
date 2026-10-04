@@ -10,16 +10,20 @@ export class BattleReplay {
     this.duration = 8000;
     
     this.resize();
-    window.addEventListener('resize', this.resize.bind(this));
+    if (typeof window !== 'undefined') {
+      window.addEventListener('resize', this.resize.bind(this));
+    }
   }
   
   resize() {
     const parent = this.canvas.parentElement;
     if (!parent) return;
-    const width = parent.clientWidth || window.innerWidth;
-    const height = Math.min(400, window.innerHeight * 0.5) || 400;
+    const windowWidth = typeof window !== 'undefined' ? window.innerWidth : 400;
+    const windowHeight = typeof window !== 'undefined' ? window.innerHeight : 600;
+    const width = parent.clientWidth || windowWidth;
+    const height = Math.min(400, windowHeight * 0.5) || 400;
     
-    const dpr = window.devicePixelRatio || 1;
+    const dpr = (typeof window !== 'undefined' && window.devicePixelRatio) || 1;
     this.canvas.width = width * dpr;
     this.canvas.height = height * dpr;
     this.canvas.style.width = `${width}px`;

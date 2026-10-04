@@ -39,13 +39,91 @@ async function init() {
   showScreen('screen-home');
 }
 
+function getBriefingRules(mode, challenge) {
+  const rules = [];
+  if (mode.id === 'minefield') {
+    rules.push('👀 <strong>Memorize Phase</strong>: Red bomb tiles are visible for 3.5s before disguising as <code>?</code>.');
+    rules.push('🎯 <strong>Safe Sprint</strong>: Tap safe numbers in ascending order without stepping on mines.');
+    rules.push('💥 <strong>Danger</strong>: Hitting a bomb adds +3.0s penalty and reduces your score/rank!');
+    rules.push('📡 <strong>Radar Scan</strong>: Tap "📡 Scan Radar" during play to re-reveal bombs for 2.5s (+2.5s penalty).');
+  } else if (mode.id === 'memory-grid') {
+    rules.push('🧠 <strong>Memorize Phase</strong>: The grid is displayed for 4.0s before all tiles turn to <code>?</code>.');
+    rules.push('🎯 <strong>Target Sprint</strong>: Recall tile locations and tap in order from memory.');
+    rules.push('👁️ <strong>Peek</strong>: Use the Peek button if you get stuck (-2.0s penalty).');
+    rules.push('❌ <strong>Mistakes</strong>: Tapping wrong tiles adds mistakes and drops accuracy.');
+  } else if (mode.id === 'sum-hunt') {
+    rules.push('🧮 <strong>Target Math</strong>: Select tiles that combine to reach the required sum.');
+    rules.push('🎯 <strong>Center / Target Banner</strong>: Keep an eye on the required sum or difference.');
+    rules.push('❌ <strong>Penalties</strong>: Invalid selections count as mistakes and decrease your score.');
+  } else if (mode.id === 'color-cascade') {
+    rules.push('🎨 <strong>Cycle Sprint</strong>: Tap tiles matching the required color or shape sequence.');
+    rules.push('👀 <strong>Stroop Effect</strong>: If text conflicts with font color, tap the FONT color!');
+    rules.push('⚡ <strong>Rhythm</strong>: Clear all 25 tiles with high speed and zero mistakes for top rank.');
+  } else if (mode.id === 'math-blitz') {
+    rules.push('⚡ <strong>Mental Math</strong>: Solve equations in ascending order of their answers (1 to 25).');
+    rules.push('🧮 <strong>Order of Operations</strong>: Multiplication takes precedence over addition/subtraction.');
+    rules.push('🎯 <strong>Target Box</strong>: The target banner always shows the answer you need next.');
+  } else if (mode.id === 'number-rush') {
+    rules.push('🔢 <strong>Rapid Sprint</strong>: Find and tap numbers across the 5×5 grid in the target sequence.');
+    rules.push('👀 <strong>Direction</strong>: Check whether today is ascending (1..25), countdown (25..1), or odd/even split!');
+  } else if (mode.id === 'alpha-hunt') {
+    rules.push('🔤 <strong>Letter Hunt</strong>: Locate and tap letters in sequence as fast as you can.');
+    rules.push('📚 <strong>Word Sprint</strong>: If today is Word Sprint, spell out the 5-letter theme words in order!');
+  }
+  return rules;
+}
+
+function promptBriefing(isPractice = false) {
+  if (isPractice) {
+    const modeKeys = Object.keys(ALL_MODES);
+    const randomKey = modeKeys[Math.floor(Math.random() * modeKeys.length)];
+    currentMode = ALL_MODES[randomKey];
+    const rng = new SeededRandom(Date.now());
+    const randomWeek = Math.floor(Math.random() * 52) + 1;
+    currentChallenge = currentMode.generateChallenge(rng, randomWeek);
+  } else {
+    currentMode = getTodayMode();
+    const dailyChal = getTodayChallenge();
+    currentChallenge = dailyChal.challenge;
+  }
+
+  const modal = document.getElementById('modal-briefing');
+  if (!modal) {
+    startCountdown(isPractice);
+    return;
+  }
+
+  const title = currentChallenge.variantName || currentMode.name;
+  document.getElementById('briefing-emoji').textContent = currentMode.emoji;
+  document.getElementById('briefing-title').textContent = title;
+  document.getElementById('briefing-badge').textContent = isPractice ? '🎯 Practice Mode' : '⚡ Daily Challenge';
+  document.getElementById('briefing-desc').textContent = currentChallenge.variantDescription || currentMode.description;
+
+  const rulesList = getBriefingRules(currentMode, currentChallenge);
+  document.getElementById('briefing-rules').innerHTML = rulesList.map(r => `<p class="mb-1">${r}</p>`).join('');
+
+  modal.classList.remove('hidden');
+
+  const startBtn = document.getElementById('briefing-start-btn');
+  const newStartBtn = startBtn.cloneNode(true);
+  startBtn.parentNode.replaceChild(newStartBtn, startBtn);
+
+  newStartBtn.addEventListener('click', () => {
+    modal.classList.add('hidden');
+    startCountdown(isPractice);
+  });
+
+  const closeBtn = document.getElementById('briefing-close-btn');
+  closeBtn?.addEventListener('click', () => modal.classList.add('hidden'));
+}
+
 function setupEventListeners() {
-  document.getElementById('home-play-btn').addEventListener('click', () => startGame(false));
+  document.getElementById('home-play-btn').addEventListener('click', () => promptBriefing(false));
   document.getElementById('home-view-result-btn').addEventListener('click', () => {
     const result = Storage.getTodayResult();
     if (result) showResult(result);
   });
-  document.getElementById('home-practice-btn').addEventListener('click', () => startGame(true));
+  document.getElementById('home-practice-btn').addEventListener('click', () => promptBriefing(true));
   
   // How to play modal
   const modal = document.getElementById('modal-how-to-play');
@@ -63,9 +141,34 @@ function setupEventListeners() {
   }
   
   document.getElementById('game-peek-btn').addEventListener('click', () => {
-    if (currentMode && currentMode.handlePeek && currentGameState && currentEngine) {
-      currentMode.handlePeek(currentGameState);
-      
+    if (!currentMode || !currentMode.handlePeek || !currentGameState || !currentEngine) return;
+
+    currentMode.handlePeek(currentGameState);
+
+    if (currentMode.id === 'minefield') {
+      const count = currentEngine.getCellCount();
+      for (let i = 0; i < count; i++) {
+        if (!currentGameState.clearedIndices.has(i)) {
+          const originalCell = currentChallenge.grid.cells[i];
+          currentEngine.updateCell(i, {
+            display: originalCell.display,
+            addClass: originalCell.isBomb ? 'bomb-preview' : 'temp-reveal'
+          });
+        }
+      }
+      setTimeout(() => {
+        for (let i = 0; i < count; i++) {
+          if (!currentGameState.clearedIndices.has(i)) {
+            currentEngine.updateCell(i, {
+              display: '?',
+              removeClass: 'bomb-preview'
+            });
+            const el = currentEngine.getCellElement(i);
+            if (el) el.classList.remove('temp-reveal');
+          }
+        }
+      }, currentMode.peekDuration || 2500);
+    } else {
       const count = currentEngine.getCellCount();
       for (let i = 0; i < count; i++) {
         const el = currentEngine.getCellElement(i);
@@ -125,14 +228,16 @@ function setupEventListeners() {
   });
 }
 
-async function startGame(isPractice = false) {
+async function startCountdown(isPractice = false) {
   if (isPractice) {
-    const modeKeys = Object.keys(ALL_MODES);
-    const randomKey = modeKeys[Math.floor(Math.random() * modeKeys.length)];
-    currentMode = ALL_MODES[randomKey];
-    const rng = new SeededRandom(Date.now());
-    const randomWeek = Math.floor(Math.random() * 52) + 1;
-    currentChallenge = currentMode.generateChallenge(rng, randomWeek);
+    if (!currentMode || !currentChallenge) {
+      const modeKeys = Object.keys(ALL_MODES);
+      const randomKey = modeKeys[Math.floor(Math.random() * modeKeys.length)];
+      currentMode = ALL_MODES[randomKey];
+      const rng = new SeededRandom(Date.now());
+      const randomWeek = Math.floor(Math.random() * 52) + 1;
+      currentChallenge = currentMode.generateChallenge(rng, randomWeek);
+    }
   } else {
     currentMode = getTodayMode();
     const dailyChal = getTodayChallenge();
@@ -190,6 +295,7 @@ async function startGame(isPractice = false) {
     if (currentEngine) currentEngine.destroy();
     currentEngine = new GameEngine(document.getElementById('game-grid'), document.getElementById('game-timer'));
     
+    const peekBtn = document.getElementById('game-peek-btn');
     if (currentMode.id === 'memory-grid') {
       currentEngine.setupGrid(currentChallenge.grid);
       const count = currentEngine.getCellCount();
@@ -197,7 +303,8 @@ async function startGame(isPractice = false) {
         const el = currentEngine.getCellElement(i);
         if (el) el.classList.add('hidden-cell');
       }
-      document.getElementById('game-peek-btn').classList.remove('hidden');
+      peekBtn.textContent = '👁 Peek (-2s penalty)';
+      peekBtn.classList.remove('hidden');
     } else if (currentMode.id === 'minefield') {
       const disguisedGrid = {
         ...currentChallenge.grid,
@@ -208,10 +315,11 @@ async function startGame(isPractice = false) {
         }))
       };
       currentEngine.setupGrid(disguisedGrid);
-      document.getElementById('game-peek-btn').classList.add('hidden');
+      peekBtn.textContent = '📡 Scan Radar (-2.5s penalty)';
+      peekBtn.classList.remove('hidden');
     } else {
       currentEngine.setupGrid(currentChallenge.grid);
-      document.getElementById('game-peek-btn').classList.add('hidden');
+      peekBtn.classList.add('hidden');
     }
     
     currentGameState.phase = 'play';
