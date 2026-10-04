@@ -436,6 +436,48 @@ button {
     transition: width 1s ease-out;
 }
 
+/* Result Action Buttons */
+.result-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    max-width: 340px;
+    margin: 0 auto;
+    gap: 12px;
+}
+
+.result-actions button,
+.result-actions .btn-primary,
+.result-actions .btn-secondary,
+.result-actions .btn-ghost {
+    width: 100% !important;
+    max-width: 340px !important;
+    height: 50px;
+    padding: 0 20px !important;
+    border-radius: 25px !important;
+    font-size: 16px !important;
+    font-weight: 700 !important;
+    margin: 0 !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    box-sizing: border-box;
+}
+
+.result-actions .btn-ghost {
+    background-color: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: rgba(255, 255, 255, 0.85);
+}
+
+.result-actions .btn-ghost:hover {
+    background-color: rgba(255, 255, 255, 0.12);
+    color: #ffffff;
+}
+
 /* Toast */
 .toast {
     position: fixed;

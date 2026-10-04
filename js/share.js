@@ -90,15 +90,19 @@ export async function generateShareCard(result) {
   ctx.textAlign = 'right';
   ctx.fillStyle = 'rgba(255,255,255,0.4)';
   ctx.font = '14px system-ui, -apple-system, sans-serif';
-  ctx.fillText('tiledly.com', 560, 290);
+  ctx.fillText('tiledly.vercel.app', 560, 290);
 }
 
 export function getShareText(result) {
+  const url = typeof window !== 'undefined' && window.location?.origin
+    ? window.location.origin
+    : 'https://tiledly.vercel.app';
+
   const lines = [
     `⚡ Tiledly #${result.dayNumber} — ${result.mode.emoji} ${result.mode.name}`,
     `⏱ ${formatTime(result.time)} | ✅ ${result.accuracy}% | 🏆 Top ${result.percentile}%`,
     `🔥 Streak: ${result.streak} day${result.streak !== 1 ? 's' : ''}`,
-    `tiledly.com`
+    `Play: ${url}`
   ];
   return lines.join('\n');
 }
