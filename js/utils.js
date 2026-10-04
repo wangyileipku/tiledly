@@ -24,16 +24,24 @@ export class SeededRandom {
   }
 }
 
-export function getDailySeed() {
-  const d = new Date();
+export function getDailySeed(date) {
+  const d = date || new Date();
   const year = d.getFullYear();
   const month = String(d.getMonth() + 1).padStart(2, '0');
   const day = String(d.getDate()).padStart(2, '0');
   return parseInt(`${year}${month}${day}`, 10);
 }
 
-export function getDayOfWeek() {
-  return new Date().getDay();
+export function getDayOfWeek(date = new Date()) {
+  return date.getDay();
+}
+
+export function getWeekOfYear(date = new Date()) {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
 }
 
 export function formatTime(ms) {

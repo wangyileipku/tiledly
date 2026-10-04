@@ -131,7 +131,8 @@ async function startGame(isPractice = false) {
     const randomKey = modeKeys[Math.floor(Math.random() * modeKeys.length)];
     currentMode = ALL_MODES[randomKey];
     const rng = new SeededRandom(Date.now());
-    currentChallenge = currentMode.generateChallenge(rng);
+    const randomWeek = Math.floor(Math.random() * 52) + 1;
+    currentChallenge = currentMode.generateChallenge(rng, randomWeek);
   } else {
     currentMode = getTodayMode();
     const dailyChal = getTodayChallenge();
@@ -142,8 +143,9 @@ async function startGame(isPractice = false) {
   const cdNum = document.getElementById('countdown-number');
   const cdMode = document.getElementById('countdown-mode');
   
+  const displayTitle = currentChallenge.variantName || currentMode.name;
   if (cdMode) {
-    cdMode.textContent = `${currentMode.emoji} ${currentMode.name}`;
+    cdMode.textContent = `${currentMode.emoji} ${displayTitle}`;
   }
   
   cdNum.textContent = '3';
@@ -236,7 +238,8 @@ async function startGame(isPractice = false) {
     }
   }
   
-  document.getElementById('game-mode-info').textContent = `${currentMode.emoji} ${currentMode.name}`;
+  const gameTitle = currentChallenge.variantName || currentMode.name;
+  document.getElementById('game-mode-info').textContent = `${currentMode.emoji} ${gameTitle}`;
   if (currentMode.getProgress) {
     document.getElementById('game-progress').textContent = currentMode.getProgress(currentGameState);
   } else if (currentMode.id === 'sum-hunt') {
@@ -263,9 +266,15 @@ function handleCellTap(index, cellData, isPractice) {
     currentEngine.deselectCell(index);
   } else if (result.action === 'correct') {
     if (currentMode.id === 'memory-grid') {
-      currentEngine.revealCell(index);
-      const el = currentEngine.getCellElement(index);
-      if (el) el.classList.remove('hidden-cell');
+      const indices = result.indices || [index];
+      indices.forEach(idx => {
+        currentEngine.revealCell(idx);
+        const el = currentEngine.getCellElement(idx);
+        if (el) el.classList.remove('hidden-cell');
+      });
+      if (result.indices && result.indices.length > 1) {
+        currentEngine.deselectAll();
+      }
     } else if (result.indices) {
       currentEngine.deselectAll();
       result.indices.forEach(i => currentEngine.highlightCell(i, 'correct'));
@@ -280,14 +289,23 @@ function handleCellTap(index, cellData, isPractice) {
     }
   } else if (result.action === 'wrong') {
     if (currentMode.id === 'memory-grid') {
-      const el = currentEngine.getCellElement(index);
-      if (el) {
-        el.classList.remove('hidden-cell');
-        currentEngine.highlightCell(index, 'wrong');
-        setTimeout(() => {
-          el.classList.add('hidden-cell');
-        }, 500);
-      }
+      const indices = result.indices || [index];
+      indices.forEach(idx => {
+        const el = currentEngine.getCellElement(idx);
+        if (el) {
+          el.classList.remove('hidden-cell');
+          currentEngine.highlightCell(idx, 'wrong');
+        }
+      });
+      setTimeout(() => {
+        indices.forEach(idx => {
+          const el = currentEngine.getCellElement(idx);
+          if (el && !(currentGameState.clearedIndices && currentGameState.clearedIndices.has(idx))) {
+            el.classList.add('hidden-cell');
+          }
+        });
+      }, 500);
+      if (result.indices) currentEngine.deselectAll();
     } else if (result.indices) {
       currentEngine.deselectAll();
       result.indices.forEach(i => currentEngine.highlightCell(i, 'wrong'));
@@ -297,6 +315,10 @@ function handleCellTap(index, cellData, isPractice) {
   } else if (result.action === 'bomb') {
     currentEngine.highlightCell(index, 'bomb');
     currentEngine.updateCell(index, { display: '💥', addClass: 'bomb' });
+  }
+
+  if (result.updateCell) {
+    currentEngine.updateCell(result.updateCell.index, result.updateCell.updates);
   }
   
   // Update target display
@@ -326,8 +348,9 @@ async function endGame(isPractice) {
   const rankNumber = Math.max(1, Math.floor(totalPlayers * (1 - stats.score / 10000) * 0.8) + randomJitter);
   const percentile = Math.max(1, Math.round((rankNumber / totalPlayers) * 100));
   
+  const finalModeName = currentChallenge.variantName || currentMode.name;
   const result = {
-    mode: { id: currentMode.id, name: currentMode.name, emoji: currentMode.emoji },
+    mode: { id: currentMode.id, name: finalModeName, emoji: currentMode.emoji },
     time: stats.time,
     score: stats.score,
     accuracy: stats.accuracy,

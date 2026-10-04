@@ -376,6 +376,13 @@ button {
     font-size: 26px;
 }
 
+.cell.stroop-tile {
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
 .cell.bomb-preview {
     background-color: rgba(255, 51, 102, 0.25);
     border-color: #ff3366;

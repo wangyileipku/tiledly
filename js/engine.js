@@ -27,6 +27,9 @@ export class GameEngine {
       if (cellData.color) {
         cellEl.style.backgroundColor = cellData.color;
       }
+      if (cellData.textColor) {
+        cellEl.style.color = cellData.textColor;
+      }
       cellEl.dataset.index = cellData.id;
       cellEl.textContent = cellData.display;
       this.gridContainerEl.appendChild(cellEl);
@@ -105,6 +108,9 @@ export class GameEngine {
     }
     if (updates.color !== undefined) {
       cell.element.style.backgroundColor = updates.color;
+    }
+    if (updates.textColor !== undefined) {
+      cell.element.style.color = updates.textColor;
     }
     if (updates.addClass) {
       cell.element.classList.add(updates.addClass);

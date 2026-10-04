@@ -1,4 +1,4 @@
-import { getDailySeed, getDayOfWeek, SeededRandom } from './utils.js';
+import { getDailySeed, getDayOfWeek, getWeekOfYear, SeededRandom } from './utils.js';
 import { SumHuntMode } from './modes/sum-hunt.js';
 import { NumberRushMode } from './modes/number-rush.js';
 import { ColorCascadeMode } from './modes/color-cascade.js';
@@ -25,21 +25,26 @@ export const ALL_MODES = {
   6: MathBlitzMode
 };
 
-export function getTodayMode() {
-  const day = getDayOfWeek();
+export function getTodayMode(date = new Date()) {
+  const day = getDayOfWeek(date);
   return ALL_MODES[day] || SumHuntMode;
 }
 
-export function getTodayChallenge() {
-  const mode = getTodayMode();
-  const seed = getDailySeed();
+export function getTodayChallenge(date = new Date()) {
+  const mode = getTodayMode(date);
+  const seed = getDailySeed(date);
+  const weekNum = getWeekOfYear(date);
   const rng = new SeededRandom(seed);
-  const challenge = mode.generateChallenge(rng);
+  const challenge = mode.generateChallenge(rng, weekNum);
   return { mode, challenge };
 }
 
-export function getModeInfo(modeObj) {
-  const mode = modeObj || getTodayMode();
+export function getModeInfo(modeObj, date = new Date()) {
+  const mode = modeObj || getTodayMode(date);
+  const weekNum = getWeekOfYear(date);
+  if (mode.getVariantInfo) {
+    return mode.getVariantInfo(weekNum);
+  }
   return {
     id: mode.id,
     name: mode.name,
