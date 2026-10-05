@@ -576,7 +576,72 @@ totalTests++;
   console.log(`  ✓ Minefield Radar: Successfully triggered with +2.5s penalty (${stats.time}ms adjusted time)`);
 }
 
+// Test 8: Serverless API Endpoint (/api/score.js)
+console.log('\n🌐 Running Serverless API (/api/score) Tests...');
+import scoreHandler from './api/score.js';
+
+// 8a. POST score submission
+totalTests++;
+{
+  const mockReq = {
+    method: 'POST',
+    body: {
+      deviceId: 'test_device_123',
+      date: '20261005',
+      time: 28400,
+      mistakes: 0,
+      score: 8750
+    }
+  };
+
+  let statusCode = 0;
+  let responseData = null;
+  const mockRes = {
+    setHeader: () => {},
+    status: (code) => {
+      statusCode = code;
+      return {
+        json: (data) => { responseData = data; },
+        end: () => {}
+      };
+    }
+  };
+
+  await scoreHandler(mockReq, mockRes);
+
+  if (statusCode !== 200 || !responseData || !responseData.rank || !responseData.totalPlayers) {
+    throw new Error(`API score handler returned invalid response: status ${statusCode}, data: ${JSON.stringify(responseData)}`);
+  }
+  passedTests++;
+  console.log(`  ✓ API Score Submit: Status 200, Rank #${responseData.rank}/${responseData.totalPlayers} (Top ${responseData.percentile}%) via ${responseData.source}`);
+}
+
+// 8b. GET summary query
+totalTests++;
+{
+  const mockReq = { method: 'GET', query: { date: '20261005' } };
+  let statusCode = 0;
+  let responseData = null;
+  const mockRes = {
+    setHeader: () => {},
+    status: (code) => {
+      statusCode = code;
+      return {
+        json: (data) => { responseData = data; }
+      };
+    }
+  };
+
+  await scoreHandler(mockReq, mockRes);
+  if (statusCode !== 200 || !responseData || typeof responseData.connected !== 'boolean') {
+    throw new Error(`API GET handler returned invalid response: status ${statusCode}`);
+  }
+  passedTests++;
+  console.log(`  ✓ API Summary Query: Status 200, KV Connected: ${responseData.connected}`);
+}
+
 console.log(`\n🎉 ALL ${passedTests}/${totalTests} TESTS PASSED!`);
 console.log(`Tiledly has 28 unique challenges, robust streak tracking, and verified cold-start battle royale replay.`);
+
 
 

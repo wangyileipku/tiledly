@@ -451,10 +451,39 @@ async function endGame(isPractice) {
   const elapsedMs = currentEngine.getElapsedTime();
   const stats = currentMode.getStats(currentGameState, elapsedMs);
   
-  const totalPlayers = 125000 + Math.floor(new SeededRandom(getDailySeed()).next() * 50000);
+  const defaultTotal = 125000 + Math.floor(new SeededRandom(getDailySeed()).next() * 50000);
   const randomJitter = Math.floor(Math.random() * 100) - 50;
-  const rankNumber = Math.max(1, Math.floor(totalPlayers * (1 - stats.score / 10000) * 0.8) + randomJitter);
-  const percentile = Math.max(1, Math.round((rankNumber / totalPlayers) * 100));
+  let rankNumber = Math.max(1, Math.floor(defaultTotal * (1 - stats.score / 10000) * 0.8) + randomJitter);
+  let liveTotalPlayers = defaultTotal;
+  let percentile = Math.max(1, Math.round((rankNumber / defaultTotal) * 100));
+
+  if (!isPractice) {
+    try {
+      const todaySeedStr = String(getDailySeed());
+      const response = await fetch('/api/score', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          deviceId: Storage.getDeviceId(),
+          date: todaySeedStr,
+          time: stats.time,
+          mistakes: stats.mistakes,
+          score: stats.score
+        })
+      });
+      if (response.ok) {
+        const liveData = await response.json();
+        if (liveData.rank) {
+          rankNumber = liveData.rank;
+          liveTotalPlayers = liveData.totalPlayers;
+          percentile = liveData.percentile;
+        }
+      }
+    } catch (e) {
+      // Seamless fallback if API route or network is unreachable
+      console.warn('Leaderboard API offline, using fallback estimation');
+    }
+  }
   
   const finalModeName = currentChallenge.variantName || currentMode.name;
   const result = {
@@ -464,7 +493,7 @@ async function endGame(isPractice) {
     accuracy: stats.accuracy,
     mistakes: stats.mistakes,
     rank: rankNumber,
-    totalPlayers,
+    totalPlayers: liveTotalPlayers,
     percentile,
     streak: Storage.getStreak().current,
     date: Date.now(),
