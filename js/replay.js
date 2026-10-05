@@ -1,4 +1,4 @@
-import { SeededRandom, easeOutCubic } from './utils.js';
+import { SeededRandom, easeOutCubic, calculateScore } from './utils.js';
 
 export class BattleReplay {
   constructor(canvasEl) {
@@ -37,19 +37,28 @@ export class BattleReplay {
     const rng = new SeededRandom(playerResult.date || Date.now());
     this.players = [];
     
+    const targetPlayerRank = playerResult.percentile 
+      ? Math.max(1, Math.min(100, playerResult.percentile))
+      : 50;
+
     for (let i = 1; i <= 99; i++) {
       let timeMultiplier;
-      const r = rng.next();
-      if (r < 0.2) {
-        timeMultiplier = 0.7 + rng.next() * 0.3;
-      } else if (r < 0.5) {
-        timeMultiplier = 0.9 + rng.next() * 0.3;
+      let botMistakes = 0;
+
+      if (i < targetPlayerRank) {
+        // Faster bot (ranks above the player)
+        const factor = i / Math.max(1, targetPlayerRank);
+        timeMultiplier = 0.55 + factor * 0.40 + (rng.next() * 0.04);
+        botMistakes = rng.next() < 0.15 ? 1 : 0;
       } else {
-        timeMultiplier = 1.1 + rng.next() * 0.9;
+        // Slower bot (ranks below the player)
+        const factor = (i - targetPlayerRank) / Math.max(1, 100 - targetPlayerRank);
+        timeMultiplier = 1.05 + factor * 1.50 + (rng.next() * 0.10);
+        botMistakes = rng.next() < 0.4 ? Math.floor(rng.next() * 4) + 1 : 0;
       }
       
-      const time = playerResult.time * timeMultiplier;
-      const score = Math.max(0, 10000 - time);
+      const time = Math.max(8000, Math.round(playerResult.time * timeMultiplier));
+      const score = calculateScore(time, botMistakes);
       this.players.push({
         id: i,
         time,
@@ -62,7 +71,7 @@ export class BattleReplay {
     this.players.push({
       id: 0,
       time: playerResult.time,
-      score: playerResult.score || 10000 - playerResult.time,
+      score: playerResult.score || calculateScore(playerResult.time, playerResult.mistakes || 0),
       isPlayer: true,
       yOffset: 0.5
     });
