@@ -33,6 +33,53 @@ async function runRedisCommand(commandArray) {
   }
 }
 
+class Mulberry32 {
+  constructor(seed) {
+    this.seed = seed;
+  }
+  next() {
+    let t = this.seed += 0x6D2B79F5;
+    t = Math.imul(t ^ t >>> 15, t | 1);
+    t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  }
+}
+
+async function ensureDailyGhostsSeeded(date) {
+  const leaderboardKey = `tiledly_lb_${date}`;
+  const count = await runRedisCommand(['ZCARD', leaderboardKey]);
+
+  if (count === null || count > 0) {
+    return; // Already initialized or Redis unavailable
+  }
+
+  // Pre-seed 99 realistic ghost racers so every player enters a full 100-player race from minute 1!
+  const seedNum = parseInt(date, 10) || 20261005;
+  const rng = new Mulberry32(seedNum);
+
+  // Score distribution across 99 baseline bots:
+  // - Top 5% (5 bots): 9000-9800 (pro speedrunners)
+  // - Top 25% (25 bots): 8000-9000 (fast players)
+  // - Solid 40% (40 bots): 6500-8000 (solid regular players)
+  // - Casual 29% (29 bots): 3200-6500 (casual / learning players)
+  const zaddArgs = ['ZADD', leaderboardKey];
+  for (let i = 1; i <= 99; i++) {
+    let botScore;
+    const r = rng.next();
+    if (r < 0.05) {
+      botScore = 9000 + Math.floor(rng.next() * 800);
+    } else if (r < 0.30) {
+      botScore = 8000 + Math.floor(rng.next() * 1000);
+    } else if (r < 0.70) {
+      botScore = 6500 + Math.floor(rng.next() * 1500);
+    } else {
+      botScore = 3200 + Math.floor(rng.next() * 3300);
+    }
+    zaddArgs.push(botScore, `ghost_bot_${i}`);
+  }
+  await runRedisCommand(zaddArgs);
+}
+
 export default async function handler(req, res) {
   // Enable CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -61,6 +108,9 @@ export default async function handler(req, res) {
       const isRedisAvailable = Boolean(process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL);
 
       if (isRedisAvailable) {
+        // Pre-seed 99 baseline ghosts if this is the very first player of the day
+        await ensureDailyGhostsSeeded(date);
+
         // Add or update player in sorted set (higher score = better rank)
         await runRedisCommand(['ZADD', leaderboardKey, score, deviceId]);
 
