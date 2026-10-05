@@ -58,22 +58,21 @@ async function ensureDailyGhostsSeeded(date) {
   const rng = new Mulberry32(seedNum);
 
   // Score distribution across 99 baseline bots:
-  // - Top 5% (5 bots): 9000-9800 (pro speedrunners)
-  // - Top 25% (25 bots): 8000-9000 (fast players)
-  // - Solid 40% (40 bots): 6500-8000 (solid regular players)
-  // - Casual 29% (29 bots): 3200-6500 (casual / learning players)
+  // IMPORTANT: Bots are deliberately kept modest (capped below 7200) so that real human
+  // players can easily take #1, #2, #3 and celebrate genuine podium finishes!
   const zaddArgs = ['ZADD', leaderboardKey];
   for (let i = 1; i <= 99; i++) {
     let botScore;
     const r = rng.next();
-    if (r < 0.05) {
-      botScore = 9000 + Math.floor(rng.next() * 800);
-    } else if (r < 0.30) {
-      botScore = 8000 + Math.floor(rng.next() * 1000);
-    } else if (r < 0.70) {
-      botScore = 6500 + Math.floor(rng.next() * 1500);
+    if (r < 0.30) {
+      // Average runners (scores 6000 to 7200, ~55-75 seconds)
+      botScore = 6000 + Math.floor(rng.next() * 1200);
+    } else if (r < 0.75) {
+      // Casual runners (scores 4500 to 6000, ~80-120 seconds)
+      botScore = 4500 + Math.floor(rng.next() * 1500);
     } else {
-      botScore = 3200 + Math.floor(rng.next() * 3300);
+      // Relaxed runners (scores 3000 to 4500, ~120-180 seconds)
+      botScore = 3000 + Math.floor(rng.next() * 1500);
     }
     zaddArgs.push(botScore, `ghost_bot_${i}`);
   }
