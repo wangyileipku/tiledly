@@ -60,6 +60,7 @@ export class BattleReplay {
           time: playerResult.time,
           score: playerResult.score,
           isPlayer: true,
+          isPro: !!playerResult.isPro,
           yOffset: 0.5,
           eliminatedAt: -1
         });
@@ -210,12 +211,27 @@ export class BattleReplay {
     this.ctx.beginPath();
     
     if (p.isPlayer) {
-      this.ctx.arc(x, y, 6, 0, Math.PI * 2);
-      this.ctx.fillStyle = '#00e5ff';
-      this.ctx.shadowColor = '#00e5ff';
-      this.ctx.shadowBlur = 10;
-      this.ctx.fill();
-      this.ctx.shadowBlur = 0;
+      if (p.isPro) {
+        this.ctx.arc(x, y, 7, 0, Math.PI * 2);
+        this.ctx.fillStyle = '#ffcc00';
+        this.ctx.shadowColor = '#ffcc00';
+        this.ctx.shadowBlur = 14;
+        this.ctx.fill();
+        this.ctx.shadowBlur = 0;
+
+        // Draw small floating crown above dot
+        this.ctx.font = '12px system-ui, sans-serif';
+        this.ctx.textAlign = 'center';
+        this.ctx.textBaseline = 'bottom';
+        this.ctx.fillText('👑', x, y - 7);
+      } else {
+        this.ctx.arc(x, y, 6, 0, Math.PI * 2);
+        this.ctx.fillStyle = '#00e5ff';
+        this.ctx.shadowColor = '#00e5ff';
+        this.ctx.shadowBlur = 10;
+        this.ctx.fill();
+        this.ctx.shadowBlur = 0;
+      }
     } else {
       let radius = 3;
       let alpha = 0.4;

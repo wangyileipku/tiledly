@@ -14,7 +14,10 @@
     <div id="app">
         <!-- Screen 1: Home -->
         <div id="screen-home" class="screen active">
-            <div class="logo"><span class="logo-icon">⚡</span> Tiledly</div>
+            <div class="home-top-bar flex-between w-100 max-w-400 mb-2">
+                <div class="logo"><span class="logo-icon">⚡</span> Tiledly</div>
+                <button id="home-pro-pill" class="btn-pro-pill">⚡ Get PRO</button>
+            </div>
             <div id="home-mode-emoji">⚡</div>
             <h2 id="home-mode-name">Classic Speed</h2>
             <p id="home-mode-desc">Tap 1 to 25 as fast as you can.</p>
@@ -117,6 +120,9 @@
                 <button id="result-replay-btn" class="btn-secondary">🎬 Watch Battle Replay</button>
                 <button id="result-home-btn" class="btn-ghost">🏠 Back to Home</button>
             </div>
+            
+            <!-- Result Screen Ad Slot (Modular Placement) -->
+            <div id="result-ad-slot" class="ad-slot-container w-100 max-w-400 mt-2"></div>
         </div>
 
         <!-- Screen 6: Replay -->
@@ -171,6 +177,37 @@
                     <p><strong class="text-white">⚔️ Battle Royale:</strong> Watch your ghost race in real time against 99 opponents!</p>
                 </div>
                 <button id="modal-got-it-btn" class="btn-primary w-100">Got it!</button>
+            </div>
+        </div>
+
+        <!-- Modal: Tiledly PRO Upgrade -->
+        <div id="modal-pro" class="modal-overlay hidden flex-center">
+            <div class="modal-card p-3 max-w-400">
+                <div class="flex-between mb-2">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span style="font-size: 32px;">👑</span>
+                        <div>
+                            <h3 class="text-gold" style="margin: 0; font-size: 20px;">Tiledly PRO</h3>
+                            <span id="pro-modal-status" class="pro-price-badge">$2.99 / mo</span>
+                        </div>
+                    </div>
+                    <button id="pro-modal-close-btn" class="btn-icon">✕</button>
+                </div>
+                
+                <p class="text-white mb-2" style="font-size: 14px; font-weight: 500;">
+                    Elevate your daily brain sprint with zero distractions & VIP perks.
+                </p>
+                
+                <div id="pro-modal-perks" class="pro-perks-list mb-3">
+                    <!-- Populated dynamically from MonetizationConfig.premium.perks -->
+                </div>
+                
+                <button id="pro-modal-checkout-btn" class="btn-pro-primary w-100 btn-large mb-2">⚡ Upgrade to PRO</button>
+                
+                <div class="flex-between text-muted" style="font-size: 11px;">
+                    <span>Cancel anytime via Stripe</span>
+                    <button id="pro-modal-test-toggle" class="btn-link text-muted" style="font-size: 11px; text-decoration: underline;">Sandbox: Toggle PRO</button>
+                </div>
             </div>
         </div>
 

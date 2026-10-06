@@ -4,6 +4,7 @@ import { GameEngine } from './engine.js';
 import { getDailySeed, SeededRandom, formatTime, formatNumber, delay } from './utils.js';
 import { generateShareCard, shareResult } from './share.js';
 import { BattleReplay } from './replay.js';
+import { Monetization } from './monetization/monetization.js';
 
 let currentEngine = null;
 let currentMode = null;
@@ -37,6 +38,7 @@ async function init() {
   }
   
   showScreen('screen-home');
+  Monetization.init();
 }
 
 function getBriefingRules(mode, challenge) {
@@ -496,6 +498,7 @@ async function endGame(isPractice) {
     totalPlayers: liveTotalPlayers,
     percentile,
     streak: Storage.getStreak().current,
+    isPro: Monetization.isPro(),
     date: Date.now(),
     dayNumber: getDailyNumber()
   };
@@ -517,7 +520,9 @@ function showResult(result) {
   document.getElementById('result-score').textContent = formatNumber(result.score);
   document.getElementById('result-accuracy').textContent = `${result.accuracy}%`;
   document.getElementById('result-mistakes').textContent = result.mistakes;
-  document.getElementById('result-rank-text').textContent = `#${formatNumber(result.rank)} / ${formatNumber(result.totalPlayers)}`;
+  
+  const rankPrefix = result.isPro ? '👑 #' : '#';
+  document.getElementById('result-rank-text').textContent = `${rankPrefix}${formatNumber(result.rank)} / ${formatNumber(result.totalPlayers)}`;
   document.getElementById('result-rank-percentile').textContent = `Top ${result.percentile}%`;
   document.getElementById('result-streak-display').textContent = `🔥 Streak: ${result.streak} Days`;
   
@@ -528,6 +533,9 @@ function showResult(result) {
       fillEl.style.width = `${100 - result.percentile}%`;
     }, 100);
   }
+  
+  // Render ad slot (or collapse if PRO)
+  Monetization.renderAdSlot('result-ad-slot', 'result');
   
   generateShareCard(result);
   

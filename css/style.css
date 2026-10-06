@@ -617,3 +617,198 @@ button {
     color: #ffffff;
 }
 
+/* Monetization & PRO Styles */
+.home-top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 10px;
+}
+
+.btn-pro-pill {
+    background: rgba(255, 204, 0, 0.12);
+    color: #ffcc00;
+    border: 1px solid rgba(255, 204, 0, 0.35);
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.btn-pro-pill:hover {
+    background: rgba(255, 204, 0, 0.22);
+    border-color: #ffcc00;
+    transform: translateY(-1px);
+}
+
+.btn-pro-pill.is-pro {
+    background: linear-gradient(135deg, rgba(255, 204, 0, 0.25), rgba(255, 153, 0, 0.25));
+    border-color: #ffcc00;
+    box-shadow: 0 0 12px rgba(255, 204, 0, 0.3);
+}
+
+.text-gold {
+    color: #ffcc00;
+    text-shadow: 0 0 10px rgba(255, 204, 0, 0.3);
+}
+
+.pro-price-badge {
+    background: rgba(255, 204, 0, 0.15);
+    color: #ffcc00;
+    border: 1px solid rgba(255, 204, 0, 0.3);
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: bold;
+    display: inline-block;
+    margin-top: 2px;
+}
+
+.btn-pro-primary {
+    background: linear-gradient(135deg, #ffcc00, #ff9900);
+    color: #0a0a1a;
+    font-weight: 800;
+    padding: 14px 28px;
+    border-radius: 24px;
+    border: none;
+    font-size: 15px;
+    cursor: pointer;
+    box-shadow: 0 4px 16px rgba(255, 153, 0, 0.35);
+    transition: all 0.15s ease;
+}
+
+.btn-pro-primary:hover:not(.btn-disabled) {
+    background: linear-gradient(135deg, #ffe066, #ffa31a);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(255, 153, 0, 0.5);
+}
+
+.btn-disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    background: #33334d !important;
+    color: #9999aa !important;
+    box-shadow: none !important;
+}
+
+.pro-perks-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background: rgba(255, 255, 255, 0.03);
+    padding: 12px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    max-height: 240px;
+    overflow-y: auto;
+}
+
+.pro-perk-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.pro-perk-icon {
+    font-size: 18px;
+    line-height: 1.2;
+}
+
+.pro-perk-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #ffffff;
+}
+
+.pro-perk-desc {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.6);
+    line-height: 1.3;
+}
+
+/* Ad Placements */
+.ad-slot-container {
+    min-height: 60px;
+    width: 100%;
+}
+
+.ad-house-card {
+    position: relative;
+    background: linear-gradient(135deg, #131326 0%, #1c1c38 100%);
+    border: 1px solid #2a2a52;
+    border-radius: 12px;
+    padding: 12px 14px;
+    overflow: hidden;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+.ad-badge {
+    position: absolute;
+    top: 4px;
+    right: 8px;
+    font-size: 9px;
+    letter-spacing: 0.5px;
+    color: rgba(255, 255, 255, 0.35);
+    font-weight: 700;
+}
+
+.ad-house-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.ad-house-icon {
+    font-size: 26px;
+    filter: drop-shadow(0 0 6px rgba(255, 204, 0, 0.4));
+}
+
+.ad-house-text {
+    flex: 1;
+    text-align: left;
+}
+
+.ad-house-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #ffcc00;
+}
+
+.ad-house-desc {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.65);
+    line-height: 1.3;
+}
+
+.btn-ad-upgrade {
+    background: #ffcc00;
+    color: #0a0a1a;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 8px 14px;
+    border-radius: 16px;
+    border: none;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: transform 0.15s;
+}
+
+.btn-ad-upgrade:hover {
+    background: #ffe066;
+    transform: scale(1.05);
+}
+
+.ad-adsense-wrapper {
+    position: relative;
+    padding-top: 14px;
+    min-height: 90px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+}
+
+

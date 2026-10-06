@@ -86,7 +86,20 @@ export const Storage = {
     if (streak.lastPlayedDate === yesterday) {
       streak.current += 1;
     } else {
-      streak.current = 1;
+      // Check for PRO status or Streak Shield protection
+      const isPro = this.getSetting('is_pro', false);
+      const shields = this.getSetting('streak_shields', 0);
+
+      if (isPro && streak.lastPlayedDate) {
+        // PRO members receive automatic streak protection
+        streak.current += 1;
+      } else if (shields > 0 && streak.lastPlayedDate) {
+        // Consume 1 streak shield
+        this.setSetting('streak_shields', shields - 1);
+        streak.current += 1;
+      } else {
+        streak.current = 1;
+      }
     }
 
     if (streak.current > streak.best) {
@@ -94,6 +107,9 @@ export const Storage = {
     }
 
     streak.lastPlayedDate = today;
+    safeStorage.setItem(`${PREFIX}streak`, JSON.stringify(streak));
+  },
+  setStreak(streak) {
     safeStorage.setItem(`${PREFIX}streak`, JSON.stringify(streak));
   },
   getHistory() {

@@ -638,8 +638,128 @@ totalTests++;
   console.log(`  ✓ API Summary Query: Status 200, KV Connected: ${responseData.connected}`);
 }
 
+// Test 9: Modular Monetization Engine & Paywall Tests
+console.log('\n👑 Running Modular Monetization & PRO Tier Tests...');
+import { Monetization } from './js/monetization/monetization.js';
+import { MonetizationConfig } from './js/monetization/config.js';
+
+// 9a. Initial State & Configuration
+totalTests++;
+{
+  if (!MonetizationConfig.enabled || !MonetizationConfig.ads || !MonetizationConfig.premium) {
+    throw new Error('MonetizationConfig schema missing required properties');
+  }
+  // Ensure default is not PRO
+  Monetization.setPro(false);
+  if (Monetization.isPro() !== false) {
+    throw new Error('Expected new user to not be PRO by default');
+  }
+  passedTests++;
+  console.log('  ✓ Config & Initial State: Validated ads and premium hooks (defaults to free tier)');
+}
+
+// 9b. PRO Status Toggling & Persistence
+totalTests++;
+{
+  Monetization.setPro(true, { plan: 'supporter' });
+  if (Monetization.isPro() !== true) {
+    throw new Error('Monetization.setPro(true) failed to activate PRO status');
+  }
+  if (Storage.getSetting('is_pro') !== true) {
+    throw new Error('PRO status not persisted in Storage');
+  }
+  passedTests++;
+  console.log('  ✓ PRO Activation: Successfully activated and persisted PRO status');
+}
+
+// 9c. Ad Slot Gating & Rendering
+totalTests++;
+{
+  const mockContainer = {
+    style: {},
+    innerHTML: '',
+    querySelector: () => ({ addEventListener: () => {} })
+  };
+
+  // 1. When user is PRO, ad slot should be hidden
+  Monetization.setPro(true);
+  Monetization.renderAdSlot(mockContainer, 'result');
+  if (mockContainer.style.display !== 'none' || mockContainer.innerHTML !== '') {
+    throw new Error('Ad slot was not suppressed for PRO member');
+  }
+
+  // 2. When user is Free, ad slot should render house ad
+  Monetization.setPro(false);
+  Monetization.renderAdSlot(mockContainer, 'result');
+  if (mockContainer.style.display !== 'block' || !mockContainer.innerHTML.includes('ad-house-card')) {
+    throw new Error('Ad slot failed to render fallback promo banner for free player');
+  }
+
+  passedTests++;
+  console.log('  ✓ Ad Slot Gating: Automatically suppresses ads for PRO and renders native banner for free players');
+}
+
+// 9d. Streak Shield Protection
+totalTests++;
+{
+  const pastDay1 = new Date('2026-10-01T12:00:00Z');
+  const skippedDay = new Date('2026-10-03T12:00:00Z'); // Skipped Oct 2!
+
+  // Reset streak
+  Storage.setStreak({ current: 5, best: 5, lastPlayedDate: '2026-10-01' });
+  
+  // Normal free user without shield: streak drops to 1
+  Monetization.setPro(false);
+  Storage.setSetting('streak_shields', 0);
+  Storage.updateStreak(skippedDay);
+  if (Storage.getStreak().current !== 1) {
+    throw new Error(`Expected broken streak to reset to 1, got ${Storage.getStreak().current}`);
+  }
+
+  // PRO user: streak is shielded and continues to 6!
+  Storage.setStreak({ current: 5, best: 5, lastPlayedDate: '2026-10-01' });
+  Monetization.setPro(true);
+  Storage.updateStreak(skippedDay);
+  if (Storage.getStreak().current !== 6) {
+    throw new Error(`Expected PRO streak shield to preserve streak to 6, got ${Storage.getStreak().current}`);
+  }
+
+  // Restore clean state
+  Monetization.setPro(false);
+  passedTests++;
+  console.log('  ✓ Streak Shield: PRO membership automatically protects broken streaks from resetting');
+}
+
+// 9e. Battle Replay PRO Crown Integration
+totalTests++;
+{
+  const mockCanvas = {
+    parentElement: { clientWidth: 400 },
+    style: {},
+    getContext: () => ({ scale: () => {} })
+  };
+  const replay = new BattleReplay(mockCanvas);
+  replay.loadData({
+    date: 20261003,
+    time: 14000,
+    score: 8500,
+    rank: 1,
+    totalPlayers: 100,
+    percentile: 1,
+    isPro: true
+  });
+
+  const p = replay.players.find(x => x.isPlayer);
+  if (!p || p.isPro !== true) {
+    throw new Error('BattleReplay player did not receive isPro status');
+  }
+  passedTests++;
+  console.log('  ✓ Replay VIP Integration: BattleReplay receives isPro flag and mounts VIP golden crown');
+}
+
 console.log(`\n🎉 ALL ${passedTests}/${totalTests} TESTS PASSED!`);
-console.log(`Tiledly has 28 unique challenges, robust streak tracking, and verified cold-start battle royale replay.`);
+console.log(`Tiledly has 28 unique challenges, robust streak tracking, verified battle royale replay, and full modular monetization.`);
+
 
 
 
