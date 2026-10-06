@@ -53,11 +53,42 @@ export function getModeInfo(modeObj, date = new Date()) {
   };
 }
 
-export function getDailyNumber() {
+export function getDailyNumber(date = new Date()) {
   const launchDate = new Date('2026-10-03T00:00:00');
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const diffTime = Math.abs(today - launchDate);
+  const target = new Date(date);
+  target.setHours(0, 0, 0, 0);
+  launchDate.setHours(0, 0, 0, 0);
+  const diffTime = target - launchDate;
   const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-  return diffDays + 1;
+  return Math.max(1, diffDays + 1);
+}
+
+export function getArchiveDays() {
+  const days = [];
+  const launchDate = new Date('2026-10-03T00:00:00');
+  launchDate.setHours(0, 0, 0, 0);
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+
+  let curr = new Date(now);
+  while (curr >= launchDate) {
+    const dayNum = getDailyNumber(curr);
+    const mode = getTodayMode(curr);
+    const info = getModeInfo(mode, curr);
+    const year = curr.getFullYear();
+    const month = String(curr.getMonth() + 1).padStart(2, '0');
+    const day = String(curr.getDate()).padStart(2, '0');
+    const dateStr = `${year}-${month}-${day}`;
+
+    days.push({
+      dateStr,
+      date: new Date(curr),
+      dayNumber: dayNum,
+      mode,
+      modeInfo: info,
+      isToday: curr.getTime() === now.getTime()
+    });
+    curr.setDate(curr.getDate() - 1);
+  }
+  return days;
 }

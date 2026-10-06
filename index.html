@@ -30,7 +30,8 @@
                 <button id="home-view-result-btn" class="btn-primary">View Result</button>
             </div>
             
-            <button id="home-practice-btn" class="btn-ghost mb-2">🎯 Practice Mode</button>
+            <button id="home-practice-btn" class="btn-ghost mb-1">🎯 Practice Mode</button>
+            <button id="home-archive-btn" class="btn-ghost mb-2">📅 Daily Archive</button>
             
             <footer class="home-footer text-muted flex-center" style="gap: 10px; font-size: 12px; flex-wrap: wrap;">
                 <button id="home-how-to-play-btn" class="btn-link text-muted">How to Play</button>
@@ -191,7 +192,7 @@
             <div class="modal-card p-3 max-w-400">
                 <div class="flex-between mb-2">
                     <div style="display: flex; align-items: center; gap: 10px;">
-                        <span id="pro-modal-crown" style="font-size: 32px; cursor: pointer; user-select: none;">👑</span>
+                        <span style="font-size: 32px;">👑</span>
                         <div>
                             <h3 class="text-gold" style="margin: 0; font-size: 20px;">Tiledly PRO</h3>
                             <span id="pro-modal-status" class="pro-price-badge">$2.99 / mo</span>
@@ -203,6 +204,10 @@
                 <p class="text-white mb-2" style="font-size: 14px; font-weight: 500;">
                     Elevate your daily brain sprint with zero distractions & VIP perks.
                 </p>
+
+                <div id="pro-modal-active-info" class="pro-active-banner hidden mb-2">
+                    <!-- Populated dynamically when user is already PRO -->
+                </div>
                 
                 <div id="pro-modal-perks" class="pro-perks-list mb-3">
                     <!-- Populated dynamically from MonetizationConfig.premium.perks -->
@@ -212,7 +217,32 @@
                 
                 <div class="flex-between text-muted" style="font-size: 11px;">
                     <span>Cancel anytime via Stripe</span>
-                    <button id="pro-modal-test-toggle" class="btn-link text-muted hidden" style="font-size: 11px; text-decoration: underline;">Sandbox: Toggle PRO</button>
+                    <button id="pro-modal-show-redeem-btn" class="btn-link text-muted" style="font-size: 11px;">Redeem VIP Key</button>
+                </div>
+
+                <div id="pro-modal-redeem-form" class="hidden mt-2 pt-2" style="border-top: 1px solid rgba(255,255,255,0.08); display: flex; gap: 8px;">
+                    <input type="text" id="pro-modal-key-input" placeholder="ENTER VIP CODE" class="vip-input" style="flex: 1;">
+                    <button id="pro-modal-redeem-submit-btn" class="btn-primary" style="width: auto; padding: 8px 14px; font-size: 12px;">Redeem</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal: Daily Archive -->
+        <div id="modal-archive" class="modal-overlay hidden flex-center">
+            <div class="modal-card p-3 max-w-400" style="max-height: 82vh; display: flex; flex-direction: column;">
+                <div class="flex-between mb-2">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span style="font-size: 28px;">📅</span>
+                        <div>
+                            <h3 class="text-accent" style="margin: 0; font-size: 20px;">Daily Archive</h3>
+                            <span class="text-muted" style="font-size: 11px;">Replay every past daily challenge</span>
+                        </div>
+                    </div>
+                    <button id="archive-close-btn" class="btn-icon">✕</button>
+                </div>
+                
+                <div id="archive-list" class="archive-list" style="overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 10px; padding: 4px 2px;">
+                    <!-- Populated dynamically by app.js -->
                 </div>
             </div>
         </div>

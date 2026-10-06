@@ -1,5 +1,5 @@
 import { Storage } from './storage.js';
-import { getTodayMode, getTodayChallenge, getModeInfo, getDailyNumber, ALL_MODES } from './daily.js';
+import { getTodayMode, getTodayChallenge, getModeInfo, getDailyNumber, ALL_MODES, getArchiveDays } from './daily.js';
 import { GameEngine } from './engine.js';
 import { getDailySeed, SeededRandom, formatTime, formatNumber, delay } from './utils.js';
 import { generateShareCard, shareResult } from './share.js';
@@ -75,8 +75,10 @@ function getBriefingRules(mode, challenge) {
   return rules;
 }
 
-function promptBriefing(isPractice = false) {
-  if (isPractice) {
+function promptBriefing(isPractice = false, customConfig = null) {
+  if (customConfig) {
+    // Mode and challenge are already configured
+  } else if (isPractice) {
     const modeKeys = Object.keys(ALL_MODES);
     const randomKey = modeKeys[Math.floor(Math.random() * modeKeys.length)];
     currentMode = ALL_MODES[randomKey];
@@ -95,11 +97,11 @@ function promptBriefing(isPractice = false) {
     return;
   }
 
-  const title = currentChallenge.variantName || currentMode.name;
+  const title = customConfig?.title || currentChallenge.variantName || currentMode.name;
   document.getElementById('briefing-emoji').textContent = currentMode.emoji;
   document.getElementById('briefing-title').textContent = title;
-  document.getElementById('briefing-badge').textContent = isPractice ? '🎯 Practice Mode' : '⚡ Daily Challenge';
-  document.getElementById('briefing-desc').textContent = currentChallenge.variantDescription || currentMode.description;
+  document.getElementById('briefing-badge').textContent = customConfig?.badge || (isPractice ? '🎯 Practice Mode' : '⚡ Daily Challenge');
+  document.getElementById('briefing-desc').textContent = customConfig?.desc || currentChallenge.variantDescription || currentMode.description;
 
   const rulesList = getBriefingRules(currentMode, currentChallenge);
   document.getElementById('briefing-rules').innerHTML = rulesList.map(r => `<p class="mb-1">${r}</p>`).join('');
@@ -126,7 +128,17 @@ function setupEventListeners() {
     if (result) showResult(result);
   });
   document.getElementById('home-practice-btn').addEventListener('click', () => promptBriefing(true));
+  document.getElementById('home-archive-btn')?.addEventListener('click', () => openArchiveModal());
   
+  // Daily Archive modal
+  const archiveModal = document.getElementById('modal-archive');
+  if (archiveModal) {
+    document.getElementById('archive-close-btn')?.addEventListener('click', () => closeArchiveModal());
+    archiveModal.addEventListener('click', (e) => {
+      if (e.target === archiveModal) closeArchiveModal();
+    });
+  }
+
   // How to play modal
   const modal = document.getElementById('modal-how-to-play');
   const howToPlayBtn = document.getElementById('home-how-to-play-btn');
@@ -227,6 +239,89 @@ function setupEventListeners() {
   document.getElementById('replay-back-btn').addEventListener('click', () => {
     if (replayInstance) replayInstance.stop();
     showScreen('screen-result');
+  });
+}
+
+function openArchiveModal() {
+  const modal = document.getElementById('modal-archive');
+  const listEl = document.getElementById('archive-list');
+  if (!modal || !listEl) return;
+
+  const days = getArchiveDays();
+  const history = Storage.getHistory();
+  const historyMap = new Map();
+  history.forEach(h => {
+    if (h.date) {
+      const d = new Date(h.date);
+      const str = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      if (!historyMap.has(str)) historyMap.set(str, h);
+    }
+  });
+
+  const isPro = Monetization.isPro();
+
+  listEl.innerHTML = days.map((day, idx) => {
+    const played = historyMap.get(day.dateStr);
+    const playedBadge = played 
+      ? `<span class="archive-score-badge">✅ ${formatTime(played.time)} (${formatNumber(played.score)}pts)</span>` 
+      : '';
+
+    const actionBtn = (isPro || day.isToday)
+      ? `<button class="btn-archive-play" data-day-index="${idx}">▶ Play</button>`
+      : `<button class="btn-archive-lock" data-day-index="${idx}">🔒 PRO</button>`;
+
+    return `
+      <div class="archive-card">
+        <div class="archive-card-left">
+          <div class="archive-emoji">${day.mode.emoji}</div>
+          <div>
+            <div class="archive-day-title">
+              <span>Day #${day.dayNumber} • ${day.modeInfo.name}</span>
+              ${playedBadge}
+            </div>
+            <div class="archive-meta">${day.dateStr}${day.isToday ? ' (Today)' : ''}</div>
+          </div>
+        </div>
+        <div>${actionBtn}</div>
+      </div>
+    `;
+  }).join('');
+
+  listEl.querySelectorAll('.btn-archive-play').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const index = parseInt(btn.getAttribute('data-day-index'), 10);
+      const day = days[index];
+      startArchiveChallenge(day);
+    });
+  });
+
+  listEl.querySelectorAll('.btn-archive-lock').forEach(btn => {
+    btn.addEventListener('click', () => {
+      closeArchiveModal();
+      Monetization.openProModal();
+    });
+  });
+
+  modal.classList.remove('hidden');
+}
+
+function closeArchiveModal() {
+  const modal = document.getElementById('modal-archive');
+  if (modal) modal.classList.add('hidden');
+}
+
+function startArchiveChallenge(archiveDay) {
+  closeArchiveModal();
+  currentMode = archiveDay.mode;
+  const seed = getDailySeed(archiveDay.date);
+  const weekNum = getWeekOfYear(archiveDay.date);
+  const rng = new SeededRandom(seed);
+  currentChallenge = currentMode.generateChallenge(rng, weekNum);
+  
+  promptBriefing(true, {
+    title: `Day #${archiveDay.dayNumber}: ${archiveDay.modeInfo.name}`,
+    badge: '📅 Archive Challenge',
+    desc: archiveDay.modeInfo.description
   });
 }
 

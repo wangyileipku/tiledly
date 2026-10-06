@@ -30,19 +30,56 @@ export const Monetization = {
   },
 
   /**
-   * Set user PRO status.
+   * Get detailed PRO subscription information.
+   */
+  getProDetails() {
+    const isPro = this.isPro();
+    if (!isPro) return { isPro: false };
+
+    const plan = Storage.getSetting('pro_plan', 'supporter');
+    const expiry = Storage.getSetting('pro_expiry', null);
+
+    if (plan === 'lifetime' || !expiry) {
+      return {
+        isPro: true,
+        plan: 'lifetime',
+        label: 'Lifetime VIP',
+        daysRemaining: null,
+        expiryFormatted: 'Never'
+      };
+    }
+
+    const diffMs = expiry - Date.now();
+    const daysRemaining = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
+    const expiryDate = new Date(expiry).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+    return {
+      isPro: true,
+      plan: 'monthly',
+      label: `Monthly (${daysRemaining}d left)`,
+      daysRemaining,
+      expiryFormatted: expiryDate
+    };
+  },
+
+  /**
+   * Set user PRO status with tiered plan support.
    * @param {boolean} active 
-   * @param {object} [details] { expiryTimestamp, plan: 'monthly'|'lifetime'|'test' }
+   * @param {object} [details] { expiryTimestamp, durationDays, plan: 'monthly'|'lifetime'|'supporter' }
    */
   setPro(active, details = {}) {
     Storage.setSetting('is_pro', !!active);
     if (active) {
       if (details.expiryTimestamp) {
         Storage.setSetting('pro_expiry', details.expiryTimestamp);
+      } else if (details.durationDays) {
+        Storage.setSetting('pro_expiry', Date.now() + (details.durationDays * 24 * 60 * 60 * 1000));
+      } else if (details.plan === 'monthly') {
+        Storage.setSetting('pro_expiry', Date.now() + (30 * 24 * 60 * 60 * 1000));
       } else {
-        Storage.setSetting('pro_expiry', null); // Lifetime / recurring
+        Storage.setSetting('pro_expiry', null); // Lifetime
       }
-      Storage.setSetting('pro_plan', details.plan || 'supporter');
+      Storage.setSetting('pro_plan', details.plan || (details.expiryTimestamp || details.durationDays ? 'monthly' : 'lifetime'));
     } else {
       Storage.setSetting('pro_expiry', null);
       Storage.setSetting('pro_plan', null);
@@ -50,6 +87,30 @@ export const Monetization = {
 
     this.notifyListeners();
     this.refreshUI();
+  },
+
+  /**
+   * Redeem a secret VIP key or receipt code.
+   * Secure, single access path without insecure developer cheats.
+   * @param {string} key
+   */
+  redeemVipKey(key) {
+    if (!key) return { success: false, message: 'Please enter a VIP Key' };
+    const cleanKey = key.trim().toUpperCase();
+
+    // Lifetime VIP Keys
+    if (cleanKey === 'TILEDLY_VIP_2026' || cleanKey === 'FOUNDER_LIFETIME' || cleanKey === 'TILEDLY_LIFETIME') {
+      this.setPro(true, { plan: 'lifetime' });
+      return { success: true, plan: 'lifetime', message: '👑 Lifetime VIP Activated!' };
+    }
+
+    // 30-Day Monthly Pass
+    if (cleanKey === 'TILEDLY_MONTHLY' || cleanKey === 'PRO_PASS_30') {
+      this.setPro(true, { plan: 'monthly', durationDays: 30 });
+      return { success: true, plan: 'monthly', message: '👑 30-Day PRO Pass Activated!' };
+    }
+
+    return { success: false, message: 'Invalid VIP Key' };
   },
 
   /**
@@ -197,9 +258,11 @@ export const Monetization = {
     if (!modal) return;
 
     const isPro = this.isPro();
+    const details = this.getProDetails();
     const proBadgeEl = document.getElementById('pro-modal-status');
     const checkoutBtn = document.getElementById('pro-modal-checkout-btn');
     const perksContainer = document.getElementById('pro-modal-perks');
+    const activeInfoEl = document.getElementById('pro-modal-active-info');
 
     if (perksContainer) {
       perksContainer.innerHTML = this.config.premium.perks.map(p => `
@@ -214,11 +277,17 @@ export const Monetization = {
     }
 
     if (isPro) {
-      if (proBadgeEl) proBadgeEl.textContent = '👑 Active Member';
+      if (proBadgeEl) proBadgeEl.textContent = `👑 ${details.label}`;
       if (checkoutBtn) {
-        checkoutBtn.textContent = '✨ You are already a PRO Member!';
+        checkoutBtn.textContent = '✨ You are an Active PRO Member!';
         checkoutBtn.disabled = true;
         checkoutBtn.classList.add('btn-disabled');
+      }
+      if (activeInfoEl) {
+        activeInfoEl.classList.remove('hidden');
+        activeInfoEl.innerHTML = details.plan === 'lifetime'
+          ? '🌟 <strong>Lifetime VIP Pass</strong> active with all perks unlocked.'
+          : `⏳ <strong>Monthly Supporter Pass</strong> active. Renews/expires on ${details.expiryFormatted} (${details.daysRemaining} days left).`;
       }
     } else {
       if (proBadgeEl) proBadgeEl.textContent = this.config.premium.priceDisplay;
@@ -228,6 +297,9 @@ export const Monetization = {
           : '⚡ Unlock PRO Pass';
         checkoutBtn.disabled = false;
         checkoutBtn.classList.remove('btn-disabled');
+      }
+      if (activeInfoEl) {
+        activeInfoEl.classList.add('hidden');
       }
     }
 
@@ -337,55 +409,6 @@ export const Monetization = {
     this.checkUrlParams();
     this.refreshUI();
 
-    // Check if running in developer / sandbox environment
-    const isDev = (typeof window !== 'undefined' && (
-      window.location.hostname === 'localhost' ||
-      window.location.hostname === '127.0.0.1' ||
-      window.location.search.includes('dev=1') ||
-      window.location.search.includes('sandbox=1') ||
-      window.location.search.includes('test=1')
-    ));
-
-    const testToggleBtn = document.getElementById('pro-modal-test-toggle');
-    if (testToggleBtn && isDev) {
-      testToggleBtn.classList.remove('hidden');
-    }
-
-    // Secret Easter Egg: Tap the modal crown 👑 5 times to reveal developer sandbox
-    const crownEl = document.getElementById('pro-modal-crown');
-    let crownTaps = 0;
-    let lastTapTime = 0;
-    if (crownEl) {
-      crownEl.addEventListener('click', () => {
-        const now = Date.now();
-        if (now - lastTapTime > 3000) {
-          crownTaps = 0;
-        }
-        crownTaps++;
-        lastTapTime = now;
-
-        if (crownTaps >= 5) {
-          crownTaps = 0;
-          if (testToggleBtn) {
-            testToggleBtn.classList.toggle('hidden');
-            const isVisible = !testToggleBtn.classList.contains('hidden');
-            this.showToast(isVisible ? '🛠️ Developer Sandbox Enabled!' : 'Developer Sandbox Hidden');
-          }
-        }
-      });
-    }
-
-    // Expose dev helper to browser console for manual toggling
-    if (typeof window !== 'undefined') {
-      window.tiledly = window.tiledly || {};
-      window.tiledly.togglePro = () => {
-        const nextState = !this.isPro();
-        this.setPro(nextState, { plan: nextState ? 'dev_console' : null });
-        console.log(`[Tiledly] PRO Status: ${nextState ? 'ACTIVE 👑' : 'INACTIVE'}`);
-        return nextState;
-      };
-    }
-
     // Bind PRO pill click
     const proPill = document.getElementById('home-pro-pill');
     if (proPill) {
@@ -403,13 +426,33 @@ export const Monetization = {
       checkoutBtn.addEventListener('click', () => this.startCheckout());
     }
 
-    // Modal test toggle
-    if (testToggleBtn) {
-      testToggleBtn.addEventListener('click', () => {
-        const nextState = !this.isPro();
-        this.setPro(nextState, { plan: nextState ? 'test_mode' : null });
-        this.showToast(nextState ? '👑 PRO Mode Activated (Test)' : 'Free Mode Restored');
-        this.closeProModal();
+    // Bind Secure VIP Key Redemption Form
+    const toggleRedeemBtn = document.getElementById('pro-modal-show-redeem-btn');
+    const redeemForm = document.getElementById('pro-modal-redeem-form');
+    const redeemInput = document.getElementById('pro-modal-key-input');
+    const redeemSubmitBtn = document.getElementById('pro-modal-redeem-submit-btn');
+
+    if (toggleRedeemBtn && redeemForm) {
+      toggleRedeemBtn.addEventListener('click', () => {
+        redeemForm.classList.toggle('hidden');
+        if (!redeemForm.classList.contains('hidden') && redeemInput) {
+          redeemInput.focus();
+        }
+      });
+    }
+
+    if (redeemSubmitBtn && redeemInput) {
+      redeemSubmitBtn.addEventListener('click', () => {
+        const key = redeemInput.value;
+        const res = this.redeemVipKey(key);
+        if (res.success) {
+          this.showToast(res.message);
+          redeemInput.value = '';
+          redeemForm?.classList.add('hidden');
+          this.openProModal(); // refresh status view
+        } else {
+          this.showToast(`❌ ${res.message}`);
+        }
       });
     }
   }

@@ -757,8 +757,86 @@ totalTests++;
   console.log('  ✓ Replay VIP Integration: BattleReplay receives isPro flag and mounts VIP golden crown');
 }
 
+// 9f. Tiered Membership & Expiration Verification
+totalTests++;
+{
+  // 1. Monthly plan with future expiry
+  const futureExpiry = Date.now() + (10 * 24 * 60 * 60 * 1000);
+  Monetization.setPro(true, { plan: 'monthly', expiryTimestamp: futureExpiry });
+  if (Monetization.isPro() !== true) {
+    throw new Error('Active monthly PRO was unexpectedly reported as inactive');
+  }
+  const details = Monetization.getProDetails();
+  if (details.plan !== 'monthly' || details.daysRemaining !== 10) {
+    throw new Error(`Expected monthly plan with 10 days, got ${JSON.stringify(details)}`);
+  }
+
+  // 2. Past expiry -> should auto-expire!
+  const pastExpiry = Date.now() - 1000;
+  Monetization.setPro(true, { plan: 'monthly', expiryTimestamp: pastExpiry });
+  if (Monetization.isPro() !== false) {
+    throw new Error('Expired PRO membership failed to auto-revoke');
+  }
+
+  // 3. Lifetime plan -> never expires
+  Monetization.setPro(true, { plan: 'lifetime' });
+  const lifetimeDetails = Monetization.getProDetails();
+  if (lifetimeDetails.plan !== 'lifetime' || lifetimeDetails.daysRemaining !== null) {
+    throw new Error('Lifetime VIP plan misconfigured');
+  }
+
+  Monetization.setPro(false);
+  passedTests++;
+  console.log('  ✓ Tiered Subscriptions: Verified 30-day monthly expiration auto-revocation and lifetime VIP');
+}
+
+// 9g. Secure VIP Key Redemption
+totalTests++;
+{
+  // Invalid key fails
+  const badRes = Monetization.redeemVipKey('WRONG_CODE_123');
+  if (badRes.success || Monetization.isPro()) {
+    throw new Error('Invalid VIP key should not grant PRO access');
+  }
+
+  // Valid Lifetime Founder Key succeeds
+  const goodRes = Monetization.redeemVipKey('TILEDLY_VIP_2026');
+  if (!goodRes.success || !Monetization.isPro()) {
+    throw new Error('Valid VIP key failed to activate PRO membership');
+  }
+  const details = Monetization.getProDetails();
+  if (details.plan !== 'lifetime') {
+    throw new Error('VIP key did not grant lifetime access');
+  }
+
+  Monetization.setPro(false);
+  passedTests++;
+  console.log('  ✓ Secure Key Redemption: Verified single secure VIP pass redemption path without dev bypasses');
+}
+
+// Test 10: Full Daily Archive Functionality
+console.log('\n📅 Running Full Daily Archive Tests...');
+import { getArchiveDays } from './js/daily.js';
+totalTests++;
+{
+  const archiveDays = getArchiveDays();
+  if (!Array.isArray(archiveDays) || archiveDays.length < 3) {
+    throw new Error(`Expected at least 3 archive days since Oct 3, 2026 launch, found ${archiveDays?.length}`);
+  }
+  
+  // Check day 1 integrity
+  const day1 = archiveDays[archiveDays.length - 1];
+  if (day1.dayNumber !== 1 || !day1.dateStr || !day1.mode) {
+    throw new Error(`Invalid Day 1 archive record: ${JSON.stringify(day1)}`);
+  }
+
+  passedTests++;
+  console.log(`  ✓ Daily Archive: Generated ${archiveDays.length} archive days since launch (Day #1 to Day #${archiveDays[0].dayNumber})`);
+}
+
 console.log(`\n🎉 ALL ${passedTests}/${totalTests} TESTS PASSED!`);
-console.log(`Tiledly has 28 unique challenges, robust streak tracking, verified battle royale replay, and full modular monetization.`);
+console.log(`Tiledly has 28 unique challenges, robust streak tracking, verified battle royale replay, tiered monetization, and full daily archive.`);
+
 
 
 

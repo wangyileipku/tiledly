@@ -811,4 +811,121 @@ button {
     border-radius: 8px;
 }
 
+/* VIP & Active PRO Details */
+.pro-active-banner {
+    background: rgba(255, 204, 0, 0.1);
+    border: 1px solid rgba(255, 204, 0, 0.3);
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 12px;
+    color: #ffcc00;
+    line-height: 1.4;
+}
+
+.vip-input {
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+    color: #ffffff;
+    padding: 8px 12px;
+    font-size: 12px;
+    letter-spacing: 0.5px;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.vip-input:focus {
+    border-color: #ffcc00;
+    box-shadow: 0 0 8px rgba(255, 204, 0, 0.25);
+}
+
+/* Daily Archive List & Cards */
+.archive-card {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 12px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: all 0.2s ease;
+}
+
+.archive-card:hover {
+    border-color: rgba(0, 229, 255, 0.4);
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.archive-card-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.archive-emoji {
+    font-size: 26px;
+}
+
+.archive-day-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.archive-meta {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.55);
+    margin-top: 2px;
+}
+
+.archive-score-badge {
+    font-size: 10px;
+    color: #00ff88;
+    background: rgba(0, 255, 136, 0.12);
+    border: 1px solid rgba(0, 255, 136, 0.25);
+    padding: 1px 6px;
+    border-radius: 8px;
+    margin-left: 4px;
+}
+
+.btn-archive-play {
+    background: #00e5ff;
+    color: #0a0a1a;
+    font-weight: 700;
+    font-size: 12px;
+    padding: 6px 14px;
+    border-radius: 14px;
+    border: none;
+    cursor: pointer;
+    transition: transform 0.15s, background 0.15s;
+    white-space: nowrap;
+}
+
+.btn-archive-play:hover {
+    background: #33edff;
+    transform: scale(1.05);
+}
+
+.btn-archive-lock {
+    background: rgba(255, 204, 0, 0.12);
+    color: #ffcc00;
+    border: 1px solid rgba(255, 204, 0, 0.3);
+    font-weight: 700;
+    font-size: 11px;
+    padding: 6px 10px;
+    border-radius: 14px;
+    cursor: pointer;
+    transition: transform 0.15s;
+    white-space: nowrap;
+}
+
+.btn-archive-lock:hover {
+    background: rgba(255, 204, 0, 0.22);
+    transform: scale(1.04);
+}
+
+
 
