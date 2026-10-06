@@ -16,7 +16,7 @@ export const MonetizationConfig = {
     provider: 'mock',
     
     // Your Google AdSense Publisher ID (e.g. 'ca-pub-1234567890123456')
-    adsenseClientId: '',
+    adsenseClientId: 'ca-pub-5198922883444706',
     
     // Ad unit slot IDs from your AdSense console (optional)
     resultSlotId: '',
