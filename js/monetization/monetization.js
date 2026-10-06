@@ -337,6 +337,55 @@ export const Monetization = {
     this.checkUrlParams();
     this.refreshUI();
 
+    // Check if running in developer / sandbox environment
+    const isDev = (typeof window !== 'undefined' && (
+      window.location.hostname === 'localhost' ||
+      window.location.hostname === '127.0.0.1' ||
+      window.location.search.includes('dev=1') ||
+      window.location.search.includes('sandbox=1') ||
+      window.location.search.includes('test=1')
+    ));
+
+    const testToggleBtn = document.getElementById('pro-modal-test-toggle');
+    if (testToggleBtn && isDev) {
+      testToggleBtn.classList.remove('hidden');
+    }
+
+    // Secret Easter Egg: Tap the modal crown 👑 5 times to reveal developer sandbox
+    const crownEl = document.getElementById('pro-modal-crown');
+    let crownTaps = 0;
+    let lastTapTime = 0;
+    if (crownEl) {
+      crownEl.addEventListener('click', () => {
+        const now = Date.now();
+        if (now - lastTapTime > 3000) {
+          crownTaps = 0;
+        }
+        crownTaps++;
+        lastTapTime = now;
+
+        if (crownTaps >= 5) {
+          crownTaps = 0;
+          if (testToggleBtn) {
+            testToggleBtn.classList.toggle('hidden');
+            const isVisible = !testToggleBtn.classList.contains('hidden');
+            this.showToast(isVisible ? '🛠️ Developer Sandbox Enabled!' : 'Developer Sandbox Hidden');
+          }
+        }
+      });
+    }
+
+    // Expose dev helper to browser console for manual toggling
+    if (typeof window !== 'undefined') {
+      window.tiledly = window.tiledly || {};
+      window.tiledly.togglePro = () => {
+        const nextState = !this.isPro();
+        this.setPro(nextState, { plan: nextState ? 'dev_console' : null });
+        console.log(`[Tiledly] PRO Status: ${nextState ? 'ACTIVE 👑' : 'INACTIVE'}`);
+        return nextState;
+      };
+    }
+
     // Bind PRO pill click
     const proPill = document.getElementById('home-pro-pill');
     if (proPill) {
@@ -354,8 +403,7 @@ export const Monetization = {
       checkoutBtn.addEventListener('click', () => this.startCheckout());
     }
 
-    // Modal test toggle (for user / testing convenience)
-    const testToggleBtn = document.getElementById('pro-modal-test-toggle');
+    // Modal test toggle
     if (testToggleBtn) {
       testToggleBtn.addEventListener('click', () => {
         const nextState = !this.isPro();

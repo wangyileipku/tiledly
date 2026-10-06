@@ -32,8 +32,14 @@
             
             <button id="home-practice-btn" class="btn-ghost mb-2">🎯 Practice Mode</button>
             
-            <footer class="home-footer text-muted">
+            <footer class="home-footer text-muted flex-center" style="gap: 10px; font-size: 12px; flex-wrap: wrap;">
                 <button id="home-how-to-play-btn" class="btn-link text-muted">How to Play</button>
+                <span>•</span>
+                <a href="about.html" class="btn-link text-muted">About & FAQ</a>
+                <span>•</span>
+                <a href="privacy.html" class="btn-link text-muted">Privacy</a>
+                <span>•</span>
+                <a href="terms.html" class="btn-link text-muted">Terms</a>
             </footer>
         </div>
 
@@ -185,7 +191,7 @@
             <div class="modal-card p-3 max-w-400">
                 <div class="flex-between mb-2">
                     <div style="display: flex; align-items: center; gap: 10px;">
-                        <span style="font-size: 32px;">👑</span>
+                        <span id="pro-modal-crown" style="font-size: 32px; cursor: pointer; user-select: none;">👑</span>
                         <div>
                             <h3 class="text-gold" style="margin: 0; font-size: 20px;">Tiledly PRO</h3>
                             <span id="pro-modal-status" class="pro-price-badge">$2.99 / mo</span>
@@ -206,7 +212,7 @@
                 
                 <div class="flex-between text-muted" style="font-size: 11px;">
                     <span>Cancel anytime via Stripe</span>
-                    <button id="pro-modal-test-toggle" class="btn-link text-muted" style="font-size: 11px; text-decoration: underline;">Sandbox: Toggle PRO</button>
+                    <button id="pro-modal-test-toggle" class="btn-link text-muted hidden" style="font-size: 11px; text-decoration: underline;">Sandbox: Toggle PRO</button>
                 </div>
             </div>
         </div>
