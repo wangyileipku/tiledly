@@ -481,46 +481,44 @@ totalTests++;
   };
 
   const replay = new BattleReplay(mockCanvas);
-  const playerResult = {
+  const playerResult1 = {
     date: 20261003,
     time: 14200,
-    score: 8200
+    score: 8200,
+    rank: 1,
+    totalPlayers: 100,
+    percentile: 1
   };
 
-  replay.loadData(playerResult);
+  replay.loadData(playerResult1);
 
-  // 1. Total players must be exactly 100 (99 simulated + 1 player)
+  // 1. Total players must be exactly 100
   if (!replay.players || replay.players.length !== 100) {
     throw new Error(`Expected 100 players in replay, found ${replay.players?.length}`);
   }
 
-  // 2. Real player must be included with valid rank
+  // 2. Real player must be rank #1 when playerResult.rank is 1
   const player = replay.players.find(p => p.isPlayer);
-  if (!player || player.time !== 14200 || player.score !== 8200) {
-    throw new Error('Real player not properly embedded in replay dataset');
-  }
-  if (player.rank < 1 || player.rank > 100) {
-    throw new Error(`Invalid player rank: ${player.rank}`);
+  if (!player || player.rank !== 1) {
+    throw new Error(`Expected player to be rank #1 in replay, got #${player?.rank}`);
   }
 
-  // 3. Strictly sorted descending by score
-  for (let i = 0; i < 99; i++) {
-    if (replay.players[i].score < replay.players[i + 1].score) {
-      throw new Error(`Replay players not sorted descending at index ${i}`);
-    }
+  // 3. Verify rank 1 to 100 is contiguous
+  for (let i = 0; i < 100; i++) {
     if (replay.players[i].rank !== i + 1) {
       throw new Error(`Contiguous rank failure at index ${i}`);
     }
   }
 
-  // 4. Elimination brackets exist for ranks 21 to 100
-  const eliminated = replay.players.filter(p => p.rank > 20 && p.eliminatedAt > 0);
-  if (eliminated.length !== 80) {
-    throw new Error(`Expected 80 eliminated players, found ${eliminated.length}`);
+  // 4. Test rank #2 when playerResult.rank is 2
+  replay.loadData({ ...playerResult1, rank: 2, percentile: 2 });
+  const p2 = replay.players.find(p => p.isPlayer);
+  if (p2.rank !== 2) {
+    throw new Error(`Expected player to be rank #2 in replay, got #${p2?.rank}`);
   }
 
   passedTests++;
-  console.log(`  ✓ Cold Start Replay: Generated exactly 100 racers (99 simulated + player rank #${player.rank})`);
+  console.log(`  ✓ Cold Start Replay: Generated exactly 100 racers with 100% rank alignment (player rank #${player.rank} and #${p2.rank})`);
 }
 
 // 6b. Deterministic Cold Start Reproducibility

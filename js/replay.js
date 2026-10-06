@@ -37,92 +37,77 @@ export class BattleReplay {
     const rng = new SeededRandom(playerResult.date || Date.now());
     this.players = [];
     
-    // Exact target rank:
-    // If total players <= 100, use their exact rank directly!
-    // If total players > 100, use their exact percentile!
-    let targetRank;
-    if (playerResult.rank && playerResult.totalPlayers && playerResult.totalPlayers <= 100) {
-      targetRank = Math.max(1, Math.min(100, playerResult.rank));
+    // Exact position in the 100-player race:
+    // If totalPlayers <= 100, use their exact rank! (e.g. #1 / 100 -> 1st place in race!)
+    // If totalPlayers > 100, use their percentile rank! (e.g. Top 23% -> #23 in race!)
+    let targetPlayerRank;
+    if (playerResult.totalPlayers && playerResult.totalPlayers <= 100 && playerResult.rank) {
+      targetPlayerRank = Math.max(1, Math.min(100, playerResult.rank));
     } else if (playerResult.percentile) {
-      targetRank = Math.max(1, Math.min(100, playerResult.percentile));
+      targetPlayerRank = Math.max(1, Math.min(100, playerResult.percentile));
     } else if (playerResult.rank && playerResult.totalPlayers) {
-      targetRank = Math.max(1, Math.min(100, Math.round((playerResult.rank / playerResult.totalPlayers) * 100)));
-    } else if (playerResult.score != null) {
-      targetRank = Math.max(1, Math.min(100, Math.round(101 - (playerResult.score / 100))));
+      targetPlayerRank = Math.max(1, Math.min(100, Math.round((playerResult.rank / playerResult.totalPlayers) * 100)));
     } else {
-      targetRank = 50;
+      targetPlayerRank = 50;
     }
 
-    const playerScore = playerResult.score != null
-      ? playerResult.score
-      : calculateScore(playerResult.time, playerResult.mistakes || 0);
-
-    // Compute deterministic descending step sizes to guarantee strict score ordering
-    const ceilingScore = Math.max(playerScore + (targetRank - 1) * 20, 9950);
-    const stepAhead = targetRank > 1 
-      ? Math.max(1, Math.floor((ceilingScore - playerScore) / targetRank))
-      : 1;
-
-    const floorScore = Math.min(playerScore - (100 - targetRank) * 20, 500);
-    const stepBehind = targetRank < 100
-      ? Math.max(1, Math.floor((playerScore - floorScore) / (101 - targetRank)))
-      : 1;
-
-    // Build exactly 100 racers with guaranteed contiguous ranks 1..100
-    for (let r = 1; r <= 100; r++) {
-      if (r === targetRank) {
-        // Real human player
+    for (let rank = 1; rank <= 100; rank++) {
+      if (rank === targetPlayerRank) {
+        // The real player
         this.players.push({
           id: 0,
-          rank: r,
+          rank,
           time: playerResult.time,
-          score: playerScore,
+          score: playerResult.score,
           isPlayer: true,
           yOffset: 0.5,
           eliminatedAt: -1
         });
-      } else {
-        // Bot / ghost racer
-        let timeMultiplier;
-        let botScore;
-
-        if (r < targetRank) {
-          // Faster bot ahead of player: time < player time, score > player score
-          const fraction = r / targetRank; // 0..1
-          timeMultiplier = 0.65 + (fraction * 0.32);
-          botScore = playerScore + (targetRank - r) * stepAhead;
-        } else {
-          // Slower bot behind player: time > player time, score < player score
-          const fraction = (r - targetRank) / (101 - targetRank); // 0..1
-          timeMultiplier = 1.05 + (fraction * 1.5);
-          botScore = playerScore - (r - targetRank) * stepBehind;
-        }
-        
-        const botTime = Math.max(5000, Math.round(playerResult.time * timeMultiplier));
+      } else if (rank < targetPlayerRank) {
+        // Racers who beat the player
+        const fraction = rank / Math.max(1, targetPlayerRank);
+        const timeMultiplier = 0.50 + fraction * 0.45 + (rng.next() * 0.04);
+        const botTime = Math.max(7000, Math.round(playerResult.time * timeMultiplier));
+        const botScore = playerResult.score + (targetPlayerRank - rank) * 15;
         this.players.push({
-          id: r,
-          rank: r,
+          id: rank,
+          rank,
           time: botTime,
           score: botScore,
           isPlayer: false,
           yOffset: rng.next(),
           eliminatedAt: -1
         });
+      } else {
+        // Racers who finished behind the player
+        const fraction = (rank - targetPlayerRank) / Math.max(1, 101 - targetPlayerRank);
+        const timeMultiplier = 1.05 + fraction * 1.50 + (rng.next() * 0.10);
+        const botTime = Math.round(playerResult.time * timeMultiplier);
+        const botScore = Math.max(100, playerResult.score - (rank - targetPlayerRank) * 20);
+        
+        let eliminatedAt = -1;
+        let finalProgress = 1;
+        if (rank > 20) {
+          const eliminationGroup = Math.floor((100 - rank) / 20);
+          eliminatedAt = 1000 + (eliminationGroup * 1000) + rng.next() * 1000;
+          finalProgress = rng.next() * 0.8;
+        }
+
+        this.players.push({
+          id: rank,
+          rank,
+          time: botTime,
+          score: botScore,
+          isPlayer: false,
+          yOffset: rng.next(),
+          eliminatedAt,
+          finalProgress
+        });
       }
     }
 
-    // Sort by rank ascending (rank 1 at index 0, rank 100 at index 99)
+    // Sort strictly by rank 1..100
     this.players.sort((a, b) => a.rank - b.rank);
-
-    // Set elimination wave timestamps for ranks 21 to 100
-    this.players.forEach(p => {
-      if (p.rank > 20) {
-        const eliminationGroup = Math.floor((100 - p.rank) / 20); // 0, 1, 2, 3
-        p.eliminatedAt = 1200 + (eliminationGroup * 1100) + rng.next() * 800;
-        p.finalProgress = 0.25 + (rng.next() * 0.55);
-      }
-    });
-
     this.playerIndex = this.players.findIndex(p => p.isPlayer);
   }
   
