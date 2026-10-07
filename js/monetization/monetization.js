@@ -260,9 +260,17 @@ export const Monetization = {
     const isPro = this.isPro();
     const details = this.getProDetails();
     const proBadgeEl = document.getElementById('pro-modal-status');
+    const plansContainer = document.getElementById('pro-modal-plans');
+    const activeStatusEl = document.getElementById('pro-modal-active-status');
     const checkoutBtn = document.getElementById('pro-modal-checkout-btn');
     const perksContainer = document.getElementById('pro-modal-perks');
     const activeInfoEl = document.getElementById('pro-modal-active-info');
+
+    // Populate prices from config
+    const monthlyPriceEl = document.getElementById('pro-plan-monthly-price');
+    const lifetimePriceEl = document.getElementById('pro-plan-lifetime-price');
+    if (monthlyPriceEl) monthlyPriceEl.textContent = this.config.premium.priceDisplay;
+    if (lifetimePriceEl) lifetimePriceEl.textContent = this.config.premium.oneTimePriceDisplay;
 
     if (perksContainer) {
       perksContainer.innerHTML = this.config.premium.perks.map(p => `
@@ -278,11 +286,9 @@ export const Monetization = {
 
     if (isPro) {
       if (proBadgeEl) proBadgeEl.textContent = `👑 ${details.label}`;
-      if (checkoutBtn) {
-        checkoutBtn.textContent = '✨ You are an Active PRO Member!';
-        checkoutBtn.disabled = true;
-        checkoutBtn.classList.add('btn-disabled');
-      }
+      // Hide plan buttons, show active status
+      if (plansContainer) plansContainer.classList.add('hidden');
+      if (activeStatusEl) activeStatusEl.classList.remove('hidden');
       if (activeInfoEl) {
         activeInfoEl.classList.remove('hidden');
         activeInfoEl.innerHTML = details.plan === 'lifetime'
@@ -290,17 +296,11 @@ export const Monetization = {
           : `⏳ <strong>Monthly Supporter Pass</strong> active. Renews/expires on ${details.expiryFormatted} (${details.daysRemaining} days left).`;
       }
     } else {
-      if (proBadgeEl) proBadgeEl.textContent = this.config.premium.priceDisplay;
-      if (checkoutBtn) {
-        checkoutBtn.textContent = this.config.premium.checkoutUrl 
-          ? `⚡ Upgrade Now (${this.config.premium.priceDisplay})` 
-          : '⚡ Unlock PRO Pass';
-        checkoutBtn.disabled = false;
-        checkoutBtn.classList.remove('btn-disabled');
-      }
-      if (activeInfoEl) {
-        activeInfoEl.classList.add('hidden');
-      }
+      if (proBadgeEl) proBadgeEl.textContent = `from ${this.config.premium.priceDisplay}`;
+      // Show plan buttons, hide active status
+      if (plansContainer) plansContainer.classList.remove('hidden');
+      if (activeStatusEl) activeStatusEl.classList.add('hidden');
+      if (activeInfoEl) activeInfoEl.classList.add('hidden');
     }
 
     modal.classList.remove('hidden');
@@ -316,41 +316,79 @@ export const Monetization = {
   },
 
   /**
-   * Trigger checkout flow or sandbox trial.
+   * Trigger checkout flow for a specific plan.
+   * @param {'monthly'|'lifetime'} plan
    */
-  startCheckout() {
-    if (this.config.premium.checkoutUrl) {
-      // Direct Stripe or LemonSqueezy Checkout URL
+  startCheckout(plan = 'monthly') {
+    const checkoutUrl = plan === 'lifetime'
+      ? this.config.premium.lifetimeCheckoutUrl
+      : this.config.premium.monthlyCheckoutUrl;
+
+    if (checkoutUrl) {
       const deviceId = Storage.getDeviceId();
-      const separator = this.config.premium.checkoutUrl.includes('?') ? '&' : '?';
-      const checkoutRedirect = `${this.config.premium.checkoutUrl}${separator}client_reference_id=${encodeURIComponent(deviceId)}`;
-      window.location.href = checkoutRedirect;
+      const separator = checkoutUrl.includes('?') ? '&' : '?';
+      window.location.href = `${checkoutUrl}${separator}client_reference_id=${encodeURIComponent(deviceId)}`;
     } else {
-      // Sandbox / Instant Trial mode when no Stripe link is configured yet!
-      this.setPro(true, { plan: 'trial' });
-      this.closeProModal();
-      this.showToast('🎉 Tiledly PRO unlocked! Enjoy ad-free play and VIP features!');
+      // No payment link configured for this plan
+      this.showToast('⚠️ Payment is not available yet. Please try again later.');
     }
   },
 
   /**
-   * Check incoming URL parameters for checkout callbacks (e.g. ?pro=success)
+   * On page load, verify PRO status with the server.
+   * After Stripe checkout, the webhook stores PRO status server-side.
+   * The client always verifies against the server — never trusts URL params.
    */
-  checkUrlParams() {
+  async checkUrlParams() {
     if (typeof window === 'undefined' || !window.location) return;
 
     try {
+      // Clean any checkout redirect params (cosmetic only, not used for granting PRO)
       const url = new URL(window.location.href);
-      if (url.searchParams.get('pro') === 'success' || url.searchParams.get('tiledly_pro') === '1') {
-        this.setPro(true, { plan: 'stripe_checkout' });
-        this.showToast('🎉 Welcome to Tiledly PRO! Payment verified.');
-        // Clean URL parameter without reload
+      const isReturningFromCheckout = url.searchParams.get('pro') === 'success' || url.searchParams.get('checkout') === 'complete';
+      if (isReturningFromCheckout) {
         url.searchParams.delete('pro');
-        url.searchParams.delete('tiledly_pro');
+        url.searchParams.delete('checkout');
         window.history.replaceState({}, document.title, url.pathname + (url.search ? url.search : ''));
       }
+
+      // Always verify PRO status with server
+      await this.verifyProWithServer();
+
+      if (isReturningFromCheckout && this.isPro()) {
+        this.showToast('🎉 Welcome to Tiledly PRO! Payment verified.');
+      }
     } catch (e) {
-      // Ignore URL parsing errors
+      // Ignore URL parsing / verification errors
+    }
+  },
+
+  /**
+   * Verify PRO status against the server (secure source of truth).
+   * The server checks Redis where the Stripe webhook stored the payment confirmation.
+   */
+  async verifyProWithServer() {
+    try {
+      const deviceId = Storage.getDeviceId();
+      const res = await fetch(`/api/verify-pro?deviceId=${encodeURIComponent(deviceId)}`);
+      if (!res.ok) return;
+
+      const data = await res.json();
+      if (data.isPro) {
+        this.setPro(true, {
+          plan: data.plan || 'monthly',
+          expiryTimestamp: data.expiryTimestamp || null
+        });
+      } else {
+        // Server says not PRO — clear any stale local state
+        const wasPro = Storage.getSetting('is_pro', false);
+        if (wasPro) {
+          this.setPro(false);
+        }
+      }
+    } catch (e) {
+      // Network error — keep existing local state as fallback
+      console.warn('PRO verification failed (offline?):', e.message);
     }
   },
 
@@ -421,9 +459,14 @@ export const Monetization = {
       closeBtn.addEventListener('click', () => this.closeProModal());
     }
 
-    const checkoutBtn = document.getElementById('pro-modal-checkout-btn');
-    if (checkoutBtn) {
-      checkoutBtn.addEventListener('click', () => this.startCheckout());
+    // Bind plan selection buttons
+    const monthlyBtn = document.getElementById('pro-modal-monthly-btn');
+    if (monthlyBtn) {
+      monthlyBtn.addEventListener('click', () => this.startCheckout('monthly'));
+    }
+    const lifetimeBtn = document.getElementById('pro-modal-lifetime-btn');
+    if (lifetimeBtn) {
+      lifetimeBtn.addEventListener('click', () => this.startCheckout('lifetime'));
     }
 
     // Bind Secure VIP Key Redemption Form

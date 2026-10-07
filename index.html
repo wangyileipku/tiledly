@@ -216,10 +216,26 @@
                     <!-- Populated dynamically from MonetizationConfig.premium.perks -->
                 </div>
                 
-                <button id="pro-modal-checkout-btn" class="btn-pro-primary w-100 btn-large mb-2">⚡ Upgrade to PRO</button>
+                <div id="pro-modal-plans" class="pro-plans-container mb-2">
+                    <button id="pro-modal-monthly-btn" class="btn-pro-plan" data-plan="monthly">
+                        <div class="pro-plan-name">Monthly</div>
+                        <div class="pro-plan-price" id="pro-plan-monthly-price">$2.99 / mo</div>
+                        <div class="pro-plan-note">Cancel anytime</div>
+                    </button>
+                    <button id="pro-modal-lifetime-btn" class="btn-pro-plan btn-pro-plan-featured" data-plan="lifetime">
+                        <div class="pro-plan-badge">BEST VALUE</div>
+                        <div class="pro-plan-name">Lifetime</div>
+                        <div class="pro-plan-price" id="pro-plan-lifetime-price">$9.99</div>
+                        <div class="pro-plan-note">One-time payment</div>
+                    </button>
+                </div>
+
+                <div id="pro-modal-active-status" class="hidden mb-2">
+                    <button id="pro-modal-checkout-btn" class="btn-pro-primary w-100 btn-large btn-disabled" disabled>✨ You are an Active PRO Member!</button>
+                </div>
                 
                 <div class="flex-between text-muted" style="font-size: 11px;">
-                    <span>Cancel anytime via Stripe</span>
+                    <span>Secure payment via Stripe</span>
                     <button id="pro-modal-show-redeem-btn" class="btn-link text-muted" style="font-size: 11px;">Redeem VIP Key</button>
                 </div>
 

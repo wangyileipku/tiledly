@@ -696,6 +696,84 @@ button {
     box-shadow: none !important;
 }
 
+/* PRO Plan Selection Cards */
+.pro-plans-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.btn-pro-plan {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 14px 10px;
+    border: 2px solid rgba(255, 255, 255, 0.12);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.04);
+    color: #fff;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: inherit;
+}
+
+.btn-pro-plan:hover {
+    border-color: rgba(255, 204, 0, 0.4);
+    background: rgba(255, 204, 0, 0.06);
+}
+
+.btn-pro-plan-featured {
+    border-color: rgba(255, 204, 0, 0.5);
+    background: rgba(255, 204, 0, 0.08);
+}
+
+.btn-pro-plan-featured:hover {
+    border-color: rgba(255, 204, 0, 0.7);
+    background: rgba(255, 204, 0, 0.12);
+}
+
+.pro-plan-badge {
+    position: absolute;
+    top: -9px;
+    right: 10px;
+    background: linear-gradient(135deg, #ffcc00, #ff9900);
+    color: #000;
+    font-size: 9px;
+    font-weight: 800;
+    padding: 2px 8px;
+    border-radius: 6px;
+    letter-spacing: 0.5px;
+}
+
+.pro-plan-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.pro-plan-price {
+    font-size: 20px;
+    font-weight: 800;
+    color: #ffcc00;
+}
+
+.pro-plan-note {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.45);
+}
+
+.btn-pro-plan:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btn-pro-plan:disabled:hover {
+    border-color: rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.04);
+}
+
 .pro-perks-list {
     display: flex;
     flex-direction: column;

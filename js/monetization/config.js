@@ -29,9 +29,10 @@ export const MonetizationConfig = {
     // Payment processor: 'stripe' | 'lemonsqueezy' | 'custom'
     provider: 'stripe',
     
-    // Paste your Stripe Payment Link URL here (e.g. 'https://buy.stripe.com/...')
-    // Leave empty to enable instant Sandbox / Test Mode for review
-    checkoutUrl: '',
+    // Paste your Stripe Payment Link URLs here
+    // Leave empty to disable that plan's checkout button until configured
+    monthlyCheckoutUrl: '',   // e.g. 'https://buy.stripe.com/monthly_link'
+    lifetimeCheckoutUrl: '',  // e.g. 'https://buy.stripe.com/lifetime_link'
     
     // Display pricing
     priceDisplay: '$2.99 / mo',
