@@ -1,5 +1,6 @@
 import { MonetizationConfig } from './config.js';
 import { Storage } from '../storage.js';
+import { Analytics } from '../analytics.js';
 
 const PRO_STORAGE_KEY = 'tiledly_is_pro';
 const PRO_EXPIRY_KEY = 'tiledly_pro_expiry';
@@ -304,6 +305,7 @@ export const Monetization = {
     }
 
     modal.classList.remove('hidden');
+    Analytics.trackProModalViewed();
   },
 
   /**
@@ -320,6 +322,7 @@ export const Monetization = {
    * @param {'monthly'|'lifetime'} plan
    */
   startCheckout(plan = 'monthly') {
+    Analytics.trackCheckoutInitiated(plan);
     const checkoutUrl = plan === 'lifetime'
       ? this.config.premium.lifetimeCheckoutUrl
       : this.config.premium.monthlyCheckoutUrl;

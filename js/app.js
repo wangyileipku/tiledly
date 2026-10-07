@@ -1,4 +1,5 @@
 import { Storage } from './storage.js';
+import { Analytics } from './analytics.js';
 import { getTodayMode, getTodayChallenge, getModeInfo, getDailyNumber, ALL_MODES, getArchiveDays } from './daily.js';
 import { GameEngine } from './engine.js';
 import { getDailySeed, SeededRandom, formatTime, formatNumber, delay } from './utils.js';
@@ -38,6 +39,8 @@ async function init() {
   }
   
   showScreen('screen-home');
+  Analytics.init();
+  Analytics.trackPageView();
   Monetization.init();
 }
 
@@ -205,6 +208,7 @@ function setupEventListeners() {
   });
   
   document.getElementById('result-share-btn').addEventListener('click', async () => {
+    Analytics.trackShareClicked();
     const result = lastResult || Storage.getTodayResult();
     if (result) {
       await shareResult(result);
@@ -454,6 +458,7 @@ async function startCountdown(isPractice = false) {
   
   currentEngine.onCellTap((index, cellData) => handleCellTap(index, cellData, isPractice));
   currentEngine.startTimer();
+  Analytics.trackGameStart(currentMode);
 }
 
 function handleCellTap(index, cellData, isPractice) {
@@ -604,6 +609,7 @@ async function endGame(isPractice) {
     result.streak = Storage.getStreak().current;
   }
   
+  Analytics.trackGameComplete(result);
   showResult(result);
 }
 
