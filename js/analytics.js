@@ -2,7 +2,7 @@ export const Analytics = {
   config: {
     ga4: {
       enabled: true,
-      measurementId: 'G-3MZ9FZXH63'
+      measurementId: 'G-L0NPW9E67F'
     },
     meta: {
       enabled: false,
