@@ -644,9 +644,159 @@ function showResult(result) {
     currentEngine.destroy();
     currentEngine = null;
   }
+
+  // Trigger retention PWA install prompt upon completing challenge if not installed yet
+  checkAndTriggerPwaPrompt();
+}
+
+/* ==========================================================================
+   PWA & "Add to Home Screen" Retention Hook
+   ========================================================================== */
+let deferredPrompt = null;
+const PWA_DISMISSED_KEY = 'tiledly_pwa_dismissed';
+
+function isStandalone() {
+  return window.matchMedia('(display-mode: standalone)').matches ||
+         window.navigator.standalone === true ||
+         document.referrer.includes('android-app://');
+}
+
+function isIOS() {
+  const ua = window.navigator.userAgent;
+  return /iPad|iPhone|iPod/.test(ua) && !window.MSStream;
+}
+
+function initPwa() {
+  // 1. Register Service Worker
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js').catch((err) => {
+        console.warn('SW registration failed:', err);
+      });
+    });
+  }
+
+  // 2. Listen for Chromium/Android PWA install prompt
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+
+    const homeInstallBtn = document.getElementById('home-install-app-btn');
+    if (homeInstallBtn && !isStandalone()) {
+      homeInstallBtn.classList.remove('hidden');
+    }
+
+    // Auto-prompt on home screen if never dismissed
+    const dismissedTime = Storage.getSetting(PWA_DISMISSED_KEY, 0);
+    const daysSinceDismissed = (Date.now() - dismissedTime) / (1000 * 60 * 60 * 24);
+    if (daysSinceDismissed > 3 && !isStandalone()) {
+      setTimeout(() => {
+        showPwaBanner();
+      }, 2500);
+    }
+  });
+
+  window.addEventListener('appinstalled', () => {
+    deferredPrompt = null;
+    hidePwaBanner();
+    const homeInstallBtn = document.getElementById('home-install-app-btn');
+    if (homeInstallBtn) homeInstallBtn.classList.add('hidden');
+    Analytics.trackPwaInstallAccepted();
+  });
+
+  // 3. Setup UI triggers
+  const installBtn = document.getElementById('pwa-install-btn');
+  const dismissBtn = document.getElementById('pwa-dismiss-btn');
+  const homeInstallBtn = document.getElementById('home-install-app-btn');
+  const iosModal = document.getElementById('modal-ios-install');
+  const iosCloseBtn = document.getElementById('ios-install-close-btn');
+  const iosGotItBtn = document.getElementById('ios-install-got-it-btn');
+
+  // Show home install button on iOS if not standalone
+  if (isIOS() && !isStandalone() && homeInstallBtn) {
+    homeInstallBtn.classList.remove('hidden');
+  }
+
+  if (installBtn) {
+    installBtn.addEventListener('click', async () => {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === 'accepted') {
+          Analytics.trackPwaInstallAccepted();
+        } else {
+          Analytics.trackPwaInstallDismissed();
+        }
+        deferredPrompt = null;
+        hidePwaBanner();
+      } else if (isIOS()) {
+        hidePwaBanner();
+        if (iosModal) iosModal.classList.remove('hidden');
+      }
+    });
+  }
+
+  if (homeInstallBtn) {
+    homeInstallBtn.addEventListener('click', () => {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then(({ outcome }) => {
+          if (outcome === 'accepted') Analytics.trackPwaInstallAccepted();
+          deferredPrompt = null;
+        });
+      } else if (isIOS() && iosModal) {
+        iosModal.classList.remove('hidden');
+      } else {
+        showPwaBanner();
+      }
+    });
+  }
+
+  if (dismissBtn) {
+    dismissBtn.addEventListener('click', () => {
+      hidePwaBanner();
+      Storage.setSetting(PWA_DISMISSED_KEY, Date.now());
+      Analytics.trackPwaInstallDismissed();
+    });
+  }
+
+  if (iosCloseBtn) {
+    iosCloseBtn.addEventListener('click', () => iosModal?.classList.add('hidden'));
+  }
+  if (iosGotItBtn) {
+    iosGotItBtn.addEventListener('click', () => iosModal?.classList.add('hidden'));
+  }
+}
+
+function showPwaBanner() {
+  if (isStandalone()) return;
+  const banner = document.getElementById('pwa-install-banner');
+  if (banner && banner.classList.contains('hidden')) {
+    banner.classList.remove('hidden');
+    Analytics.trackPwaPromptViewed();
+  }
+}
+
+function hidePwaBanner() {
+  const banner = document.getElementById('pwa-install-banner');
+  if (banner) banner.classList.add('hidden');
+}
+
+function checkAndTriggerPwaPrompt() {
+  if (isStandalone()) return;
+  const dismissedTime = Storage.getSetting(PWA_DISMISSED_KEY, 0);
+  const hoursSinceDismissed = (Date.now() - dismissedTime) / (1000 * 60 * 60);
+
+  // If user completed a game and hasn't dismissed in the last 24h, prompt them to save to Home Screen
+  if (hoursSinceDismissed > 24) {
+    setTimeout(() => {
+      showPwaBanner();
+    }, 1200);
+  }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
   setupEventListeners();
   init();
+  initPwa();
 });

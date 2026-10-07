@@ -106,6 +106,18 @@ export const Analytics = {
     this.trackEvent('checkout_initiated', { plan_type: plan });
   },
 
+  trackPwaPromptViewed() {
+    this.trackEvent('pwa_prompt_viewed');
+  },
+
+  trackPwaInstallAccepted() {
+    this.trackEvent('pwa_install_accepted');
+  },
+
+  trackPwaInstallDismissed() {
+    this.trackEvent('pwa_install_dismissed');
+  },
+
   trackPageView() {
     if (typeof window.gtag === 'function') {
       window.gtag('event', 'page_view');
