@@ -340,29 +340,52 @@ export const Monetization = {
   /**
    * On page load, verify PRO status with the server.
    * After Stripe checkout, the webhook stores PRO status server-side.
-   * The client always verifies against the server — never trusts URL params.
+   * Uses a polling loop if returning from checkout to prevent race conditions.
    */
   async checkUrlParams() {
     if (typeof window === 'undefined' || !window.location) return;
 
     try {
-      // Clean any checkout redirect params (cosmetic only, not used for granting PRO)
       const url = new URL(window.location.href);
-      const isReturningFromCheckout = url.searchParams.get('pro') === 'success' || url.searchParams.get('checkout') === 'complete';
+      const isReturningFromCheckout = url.searchParams.get('pro') === 'success' || 
+                                     url.searchParams.get('checkout') === 'complete' ||
+                                     url.searchParams.get('session_id') !== null;
+
       if (isReturningFromCheckout) {
+        // Clean URL parameters
         url.searchParams.delete('pro');
         url.searchParams.delete('checkout');
+        url.searchParams.delete('session_id');
         window.history.replaceState({}, document.title, url.pathname + (url.search ? url.search : ''));
       }
 
-      // Always verify PRO status with server
-      await this.verifyProWithServer();
+      if (isReturningFromCheckout) {
+        // Stripe webhook might take 1-3 seconds to process in the background.
+        // Poll every 1.5s up to 5 times (total ~7.5s) to guarantee we catch the webhook!
+        this.showToast('⏳ Verifying PRO membership with Stripe...');
+        
+        let verified = false;
+        for (let attempt = 1; attempt <= 5; attempt++) {
+          await this.verifyProWithServer({ silent: attempt < 5 });
+          if (this.isPro()) {
+            verified = true;
+            this.showToast('🎉 Welcome to Tiledly PRO! Membership activated.');
+            this.openProModal(); // Automatically open modal to celebrate active VIP status
+            break;
+          }
+          // Wait 1.5 seconds between polling attempts
+          await new Promise(r => setTimeout(r, 1500));
+        }
 
-      if (isReturningFromCheckout && this.isPro()) {
-        this.showToast('🎉 Welcome to Tiledly PRO! Payment verified.');
+        if (!verified) {
+          console.warn('Stripe webhook not yet received or still processing.');
+        }
+      } else {
+        // Standard non-checkout page load verification
+        await this.verifyProWithServer({ silent: true });
       }
     } catch (e) {
-      // Ignore URL parsing / verification errors
+      console.warn('URL param checkout check error:', e);
     }
   },
 
