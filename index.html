@@ -157,6 +157,7 @@
             <div class="result-actions">
                 <button id="result-share-btn" class="btn-primary">📋 Share Result</button>
                 <button id="result-replay-btn" class="btn-secondary">🎬 Watch Battle Replay</button>
+                <button id="result-practice-btn" class="btn-secondary">🎯 Play Practice Round</button>
                 <button id="result-home-btn" class="btn-ghost">🏠 Back to Home</button>
             </div>
             
@@ -337,27 +338,6 @@
             Copied to clipboard!
         </div>
     </div>
-    
-    <!-- Firebase Web SDK -->
-    <script type="module">
-      import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
-      import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-analytics.js";
-
-      const firebaseConfig = {
-        apiKey: "AIzaSyDs865KDro8qwibJ0SpEd8w6Ps4LGbL0dA",
-        authDomain: "tiledly.firebaseapp.com",
-        projectId: "tiledly",
-        storageBucket: "tiledly.firebasestorage.app",
-        messagingSenderId: "450062822781",
-        appId: "1:450062822781:web:1f27680abd8846c9c53014",
-        measurementId: "G-L0NPW9E67F"
-      };
-
-      const app = initializeApp(firebaseConfig);
-      const analytics = getAnalytics(app);
-      window.firebaseApp = app;
-      window.firebaseAnalytics = analytics;
-    </script>
     <script type="module" src="js/app.js"></script>
 </body>
 </html>

@@ -8,6 +8,8 @@
 html, body {
     height: 100%;
     overflow: hidden;
+    overscroll-behavior: none;
+    -webkit-overflow-scrolling: auto;
 }
 
 body {
@@ -16,6 +18,10 @@ body {
     font-family: system-ui, -apple-system, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+    touch-action: manipulation;
 }
 
 #app {
@@ -23,11 +29,19 @@ body {
     position: relative;
     width: 100%;
     overflow: hidden;
+    overscroll-behavior: none;
 }
 
-/* Touch action */
-button, .cell {
+/* Touch action & tap defense */
+button, .cell, .btn-pro-plan, .btn-primary, .btn-secondary, .btn-ghost {
     touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+.cell {
+    touch-action: none; /* strictly prevent pinch-zoom or swipe gesture delays while frantically tapping tiles */
 }
 
 /* Typography & Colors */

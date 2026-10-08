@@ -214,12 +214,15 @@ function setupEventListeners() {
       await shareResult(result);
       const toast = document.getElementById('share-toast');
       if (toast) {
-        toast.style.display = 'block';
+        toast.textContent = '📋 Copied result to clipboard!';
+        toast.classList.remove('hidden');
+        // Force reflow so transition runs
+        void toast.offsetWidth;
         toast.classList.add('show');
         setTimeout(() => { 
-            toast.style.display = 'none'; 
-            toast.classList.remove('show');
-        }, 2000);
+          toast.classList.remove('show');
+          setTimeout(() => toast.classList.add('hidden'), 350);
+        }, 2500);
       }
     }
   });
@@ -234,6 +237,10 @@ function setupEventListeners() {
       replayInstance.loadData(result);
       replayInstance.play();
     }
+  });
+
+  document.getElementById('result-practice-btn')?.addEventListener('click', () => {
+    promptBriefing(true);
   });
 
   document.getElementById('result-home-btn')?.addEventListener('click', () => {

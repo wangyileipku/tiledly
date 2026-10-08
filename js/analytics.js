@@ -20,16 +20,18 @@ export const Analytics = {
 
   init() {
     if (this.config.ga4.enabled) {
-      const script = document.createElement('script');
-      script.async = true;
-      script.src = `https://www.googletagmanager.com/gtag/js?id=${this.config.ga4.measurementId}`;
-      document.head.appendChild(script);
+      if (typeof window.gtag !== 'function') {
+        const script = document.createElement('script');
+        script.async = true;
+        script.src = `https://www.googletagmanager.com/gtag/js?id=${this.config.ga4.measurementId}`;
+        document.head.appendChild(script);
 
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      window.gtag = gtag;
-      gtag('js', new Date());
-      gtag('config', this.config.ga4.measurementId);
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        window.gtag = gtag;
+        gtag('js', new Date());
+        gtag('config', this.config.ga4.measurementId);
+      }
     }
 
     if (this.config.meta.enabled) {
@@ -62,6 +64,29 @@ export const Analytics = {
       window.gtag = window.gtag || gtag;
       gtag('js', new Date());
       gtag('config', this.config.googleAds.conversionId);
+    }
+
+    // Lightweight client runtime error capture for ad campaign traffic
+    if (typeof window !== 'undefined' && !window.__tiledly_error_handler_attached) {
+      window.__tiledly_error_handler_attached = true;
+      window.addEventListener('error', (e) => {
+        try {
+          this.trackEvent('app_exception', {
+            description: `${e.message} at ${e.filename}:${e.lineno}`,
+            fatal: false
+          });
+        } catch (_) {}
+      });
+
+      window.addEventListener('unhandledrejection', (e) => {
+        try {
+          const reason = e.reason?.message || String(e.reason);
+          this.trackEvent('app_exception', {
+            description: `UnhandledRejection: ${reason}`,
+            fatal: false
+          });
+        } catch (_) {}
+      });
     }
   },
 
