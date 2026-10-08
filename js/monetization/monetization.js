@@ -347,6 +347,16 @@ export const Monetization = {
 
     try {
       const url = new URL(window.location.href);
+
+      // Check for 1-click magic link: ?restore_token=xyz
+      const restoreToken = url.searchParams.get('restore_token');
+      if (restoreToken) {
+        url.searchParams.delete('restore_token');
+        window.history.replaceState({}, document.title, url.pathname + (url.search ? url.search : ''));
+        await this.handleMagicRestore(restoreToken);
+        return;
+      }
+
       const isReturningFromCheckout = url.searchParams.get('pro') === 'success' || 
                                      url.searchParams.get('checkout') === 'complete' ||
                                      url.searchParams.get('session_id') !== null;
@@ -416,6 +426,67 @@ export const Monetization = {
       // Network error — keep existing local state as fallback
       console.warn('PRO verification failed (offline?):', e.message);
     }
+  },
+
+  /**
+   * Automatically process 1-click magic link restore from email.
+   */
+  async handleMagicRestore(token) {
+    this.showToast('⏳ Restoring PRO membership...');
+    try {
+      const deviceId = Storage.getDeviceId();
+      const res = await fetch('/api/restore-pro', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'verify_token', token, deviceId }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        this.setPro(true, {
+          plan: data.plan,
+          expiryTimestamp: data.expiryTimestamp,
+        });
+        this.showToast(data.message || '👑 PRO membership restored!');
+        this.openProModal();
+      } else {
+        this.showToast(`❌ ${data.error || 'Restore link expired'}`);
+      }
+    } catch (e) {
+      this.showToast('❌ Failed to restore PRO. Please try again.');
+    }
+  },
+
+  /**
+   * Request restore link or code via email.
+   */
+  async requestRestoreEmail(email) {
+    const deviceId = Storage.getDeviceId();
+    const res = await fetch('/api/restore-pro', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'request', email, deviceId }),
+    });
+    return res.json();
+  },
+
+  /**
+   * Verify manual 6-digit code.
+   */
+  async verifyRestoreCode(email, code) {
+    const deviceId = Storage.getDeviceId();
+    const res = await fetch('/api/restore-pro', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'verify_code', email, code, deviceId }),
+    });
+    const data = await res.json();
+    if (res.ok && data.success) {
+      this.setPro(true, {
+        plan: data.plan,
+        expiryTimestamp: data.expiryTimestamp,
+      });
+    }
+    return { ok: res.ok, data };
   },
 
   /**
@@ -521,6 +592,84 @@ export const Monetization = {
           this.openProModal(); // refresh status view
         } else {
           this.showToast(`❌ ${res.message}`);
+        }
+      });
+    }
+
+    // Bind Restore Purchase Form
+    const toggleRestoreBtn = document.getElementById('pro-modal-show-restore-btn');
+    const restoreForm = document.getElementById('pro-modal-restore-form');
+    const restoreEmailInput = document.getElementById('pro-modal-restore-email');
+    const restoreSubmitBtn = document.getElementById('pro-modal-restore-submit-btn');
+    const restoreCodeWrap = document.getElementById('pro-modal-restore-code-wrap');
+    const restoreCodeInput = document.getElementById('pro-modal-restore-code');
+    const verifyCodeBtn = document.getElementById('pro-modal-verify-code-btn');
+    const restoreStatus = document.getElementById('pro-modal-restore-status');
+
+    if (toggleRestoreBtn && restoreForm) {
+      toggleRestoreBtn.addEventListener('click', () => {
+        restoreForm.classList.toggle('hidden');
+        if (!restoreForm.classList.contains('hidden') && restoreEmailInput) {
+          restoreEmailInput.focus();
+        }
+      });
+    }
+
+    if (restoreSubmitBtn && restoreEmailInput) {
+      restoreSubmitBtn.addEventListener('click', async () => {
+        const email = restoreEmailInput.value.trim();
+        if (!email) {
+          if (restoreStatus) restoreStatus.textContent = 'Please enter your Stripe email.';
+          return;
+        }
+
+        restoreSubmitBtn.disabled = true;
+        restoreSubmitBtn.textContent = 'Sending...';
+        if (restoreStatus) restoreStatus.textContent = 'Searching for your subscription...';
+
+        try {
+          const res = await this.requestRestoreEmail(email);
+          if (res.success) {
+            if (restoreStatus) restoreStatus.textContent = res.message || 'Check your email for the restore link!';
+            if (restoreCodeWrap) restoreCodeWrap.classList.remove('hidden');
+            if (res.magicCode && restoreCodeInput) {
+              restoreCodeInput.value = res.magicCode; // Pre-fill test code if Resend not set up yet
+            }
+          } else {
+            if (restoreStatus) restoreStatus.textContent = `❌ ${res.error || 'Failed to request restore.'}`;
+          }
+        } catch (_) {
+          if (restoreStatus) restoreStatus.textContent = '❌ Network error. Please try again.';
+        } finally {
+          restoreSubmitBtn.disabled = false;
+          restoreSubmitBtn.textContent = 'Send Link';
+        }
+      });
+    }
+
+    if (verifyCodeBtn && restoreCodeInput && restoreEmailInput) {
+      verifyCodeBtn.addEventListener('click', async () => {
+        const code = restoreCodeInput.value.trim();
+        const email = restoreEmailInput.value.trim();
+        if (!code || !email) return;
+
+        verifyCodeBtn.disabled = true;
+        verifyCodeBtn.textContent = 'Verifying...';
+
+        try {
+          const { ok, data } = await this.verifyRestoreCode(email, code);
+          if (ok && data.success) {
+            this.showToast(data.message || '👑 PRO membership restored!');
+            restoreForm?.classList.add('hidden');
+            this.openProModal();
+          } else {
+            if (restoreStatus) restoreStatus.textContent = `❌ ${data.error || 'Invalid code.'}`;
+          }
+        } catch (_) {
+          if (restoreStatus) restoreStatus.textContent = '❌ Error verifying code.';
+        } finally {
+          verifyCodeBtn.disabled = false;
+          verifyCodeBtn.textContent = 'Verify Code';
         }
       });
     }

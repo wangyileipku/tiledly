@@ -177,16 +177,19 @@ export default async function handler(req, res) {
       ? now + (30 * 24 * 60 * 60 * 1000)
       : null;
 
+    const customerEmail = (session.customer_details?.email || session.customer_email || '').trim().toLowerCase();
+
     const proRecord = JSON.stringify({
       active: true,
       plan,
       activatedAt: now,
       expiryTimestamp,
+      email: customerEmail || null,
       stripeSessionId: session.id || null,
       stripeCustomerId: session.customer || null,
     });
 
-    // Store in Redis
+    // Store in Redis keyed by deviceId
     const redisKey = `tiledly_pro_${deviceId}`;
     const result = await runRedisCommand(['SET', redisKey, proRecord]);
 
@@ -195,7 +198,13 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: 'Failed to store PRO status' });
     }
 
-    console.log(`✅ PRO activated for device ${deviceId.slice(0, 8)}... (plan: ${plan})`);
+    // If email is present, maintain an email -> proRecord index for cross-device restoration
+    if (customerEmail) {
+      const emailKey = `tiledly_pro_email_${customerEmail}`;
+      await runRedisCommand(['SET', emailKey, proRecord]);
+    }
+
+    console.log(`✅ PRO activated for device ${deviceId.slice(0, 8)}... (plan: ${plan}, email: ${customerEmail || 'none'})`);
     return res.status(200).json({ received: true, deviceId: deviceId.slice(0, 8) + '...' });
   }
 

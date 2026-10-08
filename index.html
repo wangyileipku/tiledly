@@ -265,10 +265,25 @@
                 </div>
                 
                 <div class="flex-between text-muted" style="font-size: 11px;">
-                    <span>Secure payment via Stripe</span>
-                    <button id="pro-modal-show-redeem-btn" class="btn-link text-muted" style="font-size: 11px;">Redeem VIP Key</button>
+                    <button id="pro-modal-show-restore-btn" class="btn-link text-muted" style="font-size: 11px; padding: 0;">Already PRO? Restore</button>
+                    <button id="pro-modal-show-redeem-btn" class="btn-link text-muted" style="font-size: 11px; padding: 0;">Redeem VIP Key</button>
                 </div>
 
+                <!-- Restore Purchase Form -->
+                <div id="pro-modal-restore-form" class="hidden mt-2 pt-2" style="border-top: 1px solid rgba(255,255,255,0.08);">
+                    <div style="font-size: 12px; color: #ffcc00; margin-bottom: 6px; font-weight: 600;">📧 Restore via Stripe Email</div>
+                    <div style="display: flex; gap: 8px; margin-bottom: 6px;">
+                        <input type="email" id="pro-modal-restore-email" placeholder="name@email.com" class="vip-input" style="flex: 1; font-size: 13px;">
+                        <button id="pro-modal-restore-submit-btn" class="btn-primary" style="width: auto; padding: 8px 12px; font-size: 12px;">Send Link</button>
+                    </div>
+                    <div id="pro-modal-restore-code-wrap" class="hidden" style="display: flex; gap: 8px; margin-top: 6px;">
+                        <input type="text" id="pro-modal-restore-code" placeholder="6-digit code" class="vip-input" style="flex: 1; font-size: 13px; letter-spacing: 2px;">
+                        <button id="pro-modal-verify-code-btn" class="btn-secondary" style="width: auto; padding: 8px 12px; font-size: 12px;">Verify Code</button>
+                    </div>
+                    <div id="pro-modal-restore-status" class="text-muted" style="font-size: 11px; margin-top: 4px;"></div>
+                </div>
+
+                <!-- Secret VIP Key Form -->
                 <div id="pro-modal-redeem-form" class="hidden mt-2 pt-2" style="border-top: 1px solid rgba(255,255,255,0.08); display: flex; gap: 8px;">
                     <input type="text" id="pro-modal-key-input" placeholder="ENTER VIP CODE" class="vip-input" style="flex: 1;">
                     <button id="pro-modal-redeem-submit-btn" class="btn-primary" style="width: auto; padding: 8px 14px; font-size: 12px;">Redeem</button>
