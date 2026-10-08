@@ -31,8 +31,8 @@ export const MonetizationConfig = {
     
     // Paste your Stripe Payment Link URLs here
     // Leave empty to disable that plan's checkout button until configured
-    monthlyCheckoutUrl: '',   // e.g. 'https://buy.stripe.com/monthly_link'
-    lifetimeCheckoutUrl: '',  // e.g. 'https://buy.stripe.com/lifetime_link'
+    monthlyCheckoutUrl: 'https://buy.stripe.com/test_9B614oc3Pb81fop9yJ3F600',
+    lifetimeCheckoutUrl: 'https://buy.stripe.com/test_aFafZi3xjdg9gst6mx3F601',
     
     // Display pricing
     priceDisplay: '$2.99 / mo',
