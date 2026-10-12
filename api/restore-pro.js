@@ -180,7 +180,13 @@ export default async function handler(req, res) {
     // Bind current deviceId to this PRO status in Redis!
     const deviceKey = `tiledly_pro_${deviceId}`;
     await runRedisCommand(['SET', deviceKey, proRecord]);
-    
+
+    // Register this device in the customer's device Set so future renewals/cancellations
+    // automatically fan out to this device too (no manual re-restore needed each month)
+    if (session.proData?.stripeCustomerId) {
+      await runRedisCommand(['SADD', `tiledly_stripe_devices_${session.proData.stripeCustomerId}`, deviceId]);
+    }
+
     // Invalidate both token and matching code session
     await runRedisCommand(['DEL', tokenKey]);
     if (session.magicCode) {
@@ -247,6 +253,12 @@ export default async function handler(req, res) {
     // Bind current deviceId to this PRO status in Redis!
     const deviceKey = `tiledly_pro_${deviceId}`;
     await runRedisCommand(['SET', deviceKey, proRecord]);
+
+    // Register this device in the customer's device Set so future renewals/cancellations
+    // automatically fan out to this device too (no manual re-restore needed each month)
+    if (session.proData?.stripeCustomerId) {
+      await runRedisCommand(['SADD', `tiledly_stripe_devices_${session.proData.stripeCustomerId}`, deviceId]);
+    }
 
     // Clean up: delete the used code, matching token, and attempts counter
     await runRedisCommand(['DEL', codeKey]);

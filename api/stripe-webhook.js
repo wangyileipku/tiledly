@@ -2,11 +2,15 @@
 // Securely processes Stripe payment events and stores PRO status in Redis.
 //
 // SECURITY FLOW:
-// 1. Stripe sends a POST with a signed payload after successful checkout
+// 1. Stripe sends a POST with a signed payload after a payment event
 // 2. We verify the signature using STRIPE_WEBHOOK_SECRET (prevents spoofing)
-// 3. On valid `checkout.session.completed`, we extract the client_reference_id (deviceId)
-// 4. We store the PRO status in Redis — the single source of truth
-// 5. The client-side verifyProWithServer() reads from /api/verify-pro
+// 3. On valid events we read/write PRO status keyed by deviceId in Redis
+// 4. The client-side verifyProWithServer() reads from /api/verify-pro
+//
+// Handled events:
+//   checkout.session.completed        - initial purchase / subscription start
+//   customer.subscription.updated     - monthly renewal (extends expiry)
+//   customer.subscription.deleted     - cancellation / non-renewal (deactivates)
 //
 // Required env vars:
 //   STRIPE_WEBHOOK_SECRET - from Stripe Dashboard > Webhooks > Signing secret
@@ -198,6 +202,13 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: 'Failed to store PRO status' });
     }
 
+    // Save customerId → deviceId in a Redis Set (SADD supports multiple devices per customer).
+    // This is the key that lets renewal and cancellation events fan out to ALL linked devices.
+    if (session.customer) {
+      const devicesKey = `tiledly_stripe_devices_${session.customer}`;
+      await runRedisCommand(['SADD', devicesKey, deviceId]);
+    }
+
     // If email is present, maintain an email -> proRecord index for cross-device restoration
     if (customerEmail) {
       const emailKey = `tiledly_pro_email_${customerEmail}`;
@@ -206,6 +217,76 @@ export default async function handler(req, res) {
 
     console.log(`✅ PRO activated for device ${deviceId.slice(0, 8)}... (plan: ${plan}, email: ${customerEmail || 'none'})`);
     return res.status(200).json({ received: true, deviceId: deviceId.slice(0, 8) + '...' });
+  }
+
+  // Handle subscription renewal — Stripe sends this when a monthly billing cycle succeeds.
+  // Updates ALL devices linked to this customer so no device ever needs a manual restore
+  // after the monthly charge goes through.
+  if (event.type === 'customer.subscription.updated') {
+    const subscription = event.data?.object;
+    const customerId = subscription?.customer;
+
+    // Only act on active subscriptions (ignore cancellation-scheduled updates)
+    if (subscription?.status !== 'active') {
+      console.log(`ℹ️ subscription.updated ignored — status: ${subscription?.status}`);
+      return res.status(200).json({ received: true, type: event.type });
+    }
+
+    // Fetch all devices linked to this customer
+    const deviceIds = await runRedisCommand(['SMEMBERS', `tiledly_stripe_devices_${customerId}`]);
+    if (!deviceIds || deviceIds.length === 0) {
+      console.warn('subscription.updated: no devices found for customer', customerId);
+      return res.status(200).json({ received: true, type: event.type });
+    }
+
+    // current_period_end is a Unix timestamp (seconds); convert to ms
+    const newExpiry = subscription.current_period_end
+      ? subscription.current_period_end * 1000
+      : null;
+
+    // Update every linked device in parallel
+    await Promise.all(deviceIds.map(async (devId) => {
+      const redisKey = `tiledly_pro_${devId}`;
+      const raw = await runRedisCommand(['GET', redisKey]);
+      if (!raw) return;
+
+      const record = JSON.parse(raw);
+      record.active = true;
+      record.expiryTimestamp = newExpiry ?? record.expiryTimestamp;
+      record.renewedAt = Date.now();
+      await runRedisCommand(['SET', redisKey, JSON.stringify(record)]);
+    }));
+
+    console.log(`🔄 PRO renewed for ${deviceIds.length} device(s) of customer ${customerId} (expires: ${newExpiry ? new Date(newExpiry).toISOString() : 'n/a'})`);
+    return res.status(200).json({ received: true, type: event.type });
+  }
+
+  // Handle subscription cancellation — Stripe sends this when a subscription ends
+  // (either immediately cancelled or not renewed at the end of the billing period).
+  // Cancels ALL linked devices so the user loses access everywhere simultaneously.
+  if (event.type === 'customer.subscription.deleted') {
+    const subscription = event.data?.object;
+    const customerId = subscription?.customer;
+
+    const deviceIds = await runRedisCommand(['SMEMBERS', `tiledly_stripe_devices_${customerId}`]);
+    if (!deviceIds || deviceIds.length === 0) {
+      console.warn('subscription.deleted: no devices found for customer', customerId);
+      return res.status(200).json({ received: true, type: event.type });
+    }
+
+    await Promise.all(deviceIds.map(async (devId) => {
+      const redisKey = `tiledly_pro_${devId}`;
+      const raw = await runRedisCommand(['GET', redisKey]);
+      if (!raw) return;
+
+      const record = JSON.parse(raw);
+      record.active = false;
+      record.canceledAt = Date.now();
+      await runRedisCommand(['SET', redisKey, JSON.stringify(record)]);
+    }));
+
+    console.log(`❌ PRO cancelled for ${deviceIds.length} device(s) of customer ${customerId}`);
+    return res.status(200).json({ received: true, type: event.type });
   }
 
   // Acknowledge other event types without processing

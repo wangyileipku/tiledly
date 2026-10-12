@@ -155,7 +155,6 @@ function setupEventListeners() {
   };
 
   document.getElementById('home-share-btn')?.addEventListener('click', handleShareGame);
-  document.getElementById('home-share-icon-btn')?.addEventListener('click', handleShareGame);
   document.getElementById('home-footer-share-btn')?.addEventListener('click', (e) => {
     e.preventDefault();
     handleShareGame();
