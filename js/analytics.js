@@ -1,3 +1,5 @@
+import { Storage } from './storage.js';
+
 export const Analytics = {
   config: {
     ga4: {
@@ -18,7 +20,13 @@ export const Analytics = {
     }
   },
 
+  hasConsent() {
+    return Storage.getSetting('cookie_consent', null) === 'all';
+  },
+
   init() {
+    const hasConsent = this.hasConsent();
+
     if (this.config.ga4.enabled) {
       if (typeof window.gtag !== 'function') {
         const script = document.createElement('script');
@@ -34,7 +42,8 @@ export const Analytics = {
       }
     }
 
-    if (this.config.meta.enabled) {
+    // Only load third-party marketing pixels if user explicitly accepted all cookies
+    if (hasConsent && this.config.meta.enabled) {
       !function(f,b,e,v,n,t,s)
       {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
       n.callMethod.apply(n,arguments):n.queue.push(arguments)};
@@ -46,14 +55,14 @@ export const Analytics = {
       fbq('init', this.config.meta.pixelId);
     }
 
-    if (this.config.tiktok.enabled) {
+    if (hasConsent && this.config.tiktok.enabled) {
       !function (w, d, t) {
         w.TiktokAnalyticsObject=t;var ttq=w[t]=w[t]||[];ttq.methods=["page","track","identify","instances","debug","on","off","once","ready","alias","group","enableCookie","disableCookie"],ttq.setAndDefer=function(t,e){t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}};for(var i=0;i<ttq.methods.length;i++)ttq.setAndDefer(ttq,ttq.methods[i]);ttq.instance=function(t){for(var e=ttq._i[t]||[],n=0;n<ttq.methods.length;n++)ttq.setAndDefer(e,ttq.methods[n]);return e},ttq.load=function(e,n){var i="https://analytics.tiktok.com/i18n/pixel/events.js";ttq._i=ttq._i||{},ttq._i[e]=[],ttq._i[e]._u=i,ttq._t=ttq._t||{},ttq._t[e]=+new Date,ttq._o=ttq._o||{},ttq._o[e]=n||{};n=document.createElement("script");n.type="text/javascript",n.async=!0,n.src=i+"?sdkid="+e+"&lib="+t;e=document.getElementsByTagName("script")[0];e.parentNode.insertBefore(n,e)};
         ttq.load(this.config.tiktok.pixelId);
       }(window, document, 'ttq');
     }
 
-    if (this.config.googleAds.enabled) {
+    if (hasConsent && this.config.googleAds.enabled) {
       const script = document.createElement('script');
       script.async = true;
       script.src = `https://www.googletagmanager.com/gtag/js?id=${this.config.googleAds.conversionId}`;
@@ -67,7 +76,7 @@ export const Analytics = {
     }
 
     // Lightweight client runtime error capture for ad campaign traffic
-    if (typeof window !== 'undefined' && !window.__tiledly_error_handler_attached) {
+    if (typeof window !== 'undefined' && typeof window.addEventListener === 'function' && !window.__tiledly_error_handler_attached) {
       window.__tiledly_error_handler_attached = true;
       window.addEventListener('error', (e) => {
         try {

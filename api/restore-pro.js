@@ -8,6 +8,8 @@
 //    Validates the token/code, links the user's current deviceId in Redis, and unlocks PRO!
 
 import crypto from 'crypto';
+import { applyCors } from './_cors.js';
+import { createProToken } from './_token.js';
 
 async function runRedisCommand(commandArray) {
   const url = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
@@ -74,12 +76,7 @@ async function sendRestoreEmail(toEmail, restoreUrl, magicCode) {
 }
 
 export default async function handler(req, res) {
-  // CORS
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
-  if (req.method === 'OPTIONS') return res.status(200).end();
+  if (applyCors(req, res)) return;
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   let body = {};
@@ -91,17 +88,28 @@ export default async function handler(req, res) {
 
   const { action, email, code, token, deviceId } = body;
 
-  if (!deviceId) {
-    return res.status(400).json({ error: 'Missing deviceId' });
+  if (!deviceId || typeof deviceId !== 'string' || deviceId.length < 5 || deviceId.length > 64) {
+    return res.status(400).json({ error: 'Missing or invalid deviceId' });
   }
 
   // ACTION 1: Request Restore
   if (action === 'request') {
-    if (!email || !email.includes('@')) {
+    if (!email || typeof email !== 'string' || !email.includes('@') || email.length > 100) {
       return res.status(400).json({ error: 'Please enter a valid email address.' });
     }
 
     const cleanEmail = email.trim().toLowerCase();
+
+    // ── Rate limit: max 3 restore requests per email per hour ──
+    const requestRateLimitKey = `tiledly_restore_ratelimit_${cleanEmail}`;
+    const requestCount = await runRedisCommand(['INCR', requestRateLimitKey]);
+    if (requestCount === 1) {
+      // First request — set 1-hour expiry window
+      await runRedisCommand(['EXPIRE', requestRateLimitKey, '3600']);
+    }
+    if (requestCount > 3) {
+      return res.status(429).json({ error: 'Too many restore requests. Please try again in an hour.' });
+    }
     const emailKey = `tiledly_pro_email_${cleanEmail}`;
     const rawPro = await runRedisCommand(['GET', emailKey]);
 
@@ -122,14 +130,15 @@ export default async function handler(req, res) {
       });
     }
 
-    // Generate random 6-digit code and secure 32-char token
-    const magicCode = Math.floor(100000 + Math.random() * 900000).toString();
+    // Use cryptographically secure 6-digit code and secure 32-char token
+    const magicCode = crypto.randomInt(100000, 1000000).toString();
     const magicToken = crypto.randomBytes(16).toString('hex');
 
     // Store restore session in Redis with 20-minute TTL (1200 seconds)
     const restoreSession = JSON.stringify({
       email: cleanEmail,
       magicCode,
+      magicToken,
       proData,
       createdAt: Date.now(),
     });
@@ -137,25 +146,26 @@ export default async function handler(req, res) {
     await runRedisCommand(['SET', `tiledly_restore_token_${magicToken}`, restoreSession, 'EX', '1200']);
     await runRedisCommand(['SET', `tiledly_restore_code_${cleanEmail}_${magicCode}`, restoreSession, 'EX', '1200']);
 
-    const origin = req.headers.origin || 'https://www.tiledly.com';
-    const restoreUrl = `${origin}/?restore_token=${magicToken}`;
+    // Hardcode canonical URL - never trust client Origin/Host headers for sensitive URLs
+    const baseUrl = 'https://tiledly.com';
+    const restoreUrl = `${baseUrl}/?restore_token=${magicToken}`;
 
     const emailSent = await sendRestoreEmail(cleanEmail, restoreUrl, magicCode);
 
     return res.status(200).json({
       success: true,
       emailSent,
-      // If Resend API key is not yet configured, inform user in dev/test mode
-      magicCode: emailSent ? undefined : magicCode,
       message: emailSent
         ? 'A restore link and code have been sent to your email.'
-        : `Test code generated: ${magicCode}. (Add RESEND_API_KEY to send actual emails)`,
+        : 'If an active PRO membership is associated with this email, a restore link and code have been sent.',
     });
   }
 
   // ACTION 2: Verify Magic Token (from clicking email link: ?restore_token=xyz)
   if (action === 'verify_token') {
-    if (!token) return res.status(400).json({ error: 'Missing token' });
+    if (!token || typeof token !== 'string' || !/^[a-f0-9]{32}$/i.test(token)) {
+      return res.status(400).json({ error: 'Missing or invalid token format' });
+    }
 
     const tokenKey = `tiledly_restore_token_${token}`;
     const rawSession = await runRedisCommand(['GET', tokenKey]);
@@ -170,29 +180,65 @@ export default async function handler(req, res) {
     // Bind current deviceId to this PRO status in Redis!
     const deviceKey = `tiledly_pro_${deviceId}`;
     await runRedisCommand(['SET', deviceKey, proRecord]);
+    
+    // Invalidate both token and matching code session
     await runRedisCommand(['DEL', tokenKey]);
+    if (session.magicCode) {
+      await runRedisCommand(['DEL', `tiledly_restore_code_${session.email}_${session.magicCode}`]);
+    }
+
+    const tokenVal = createProToken(deviceId, session.proData.plan, session.proData.expiryTimestamp);
 
     return res.status(200).json({
       success: true,
       plan: session.proData.plan,
       expiryTimestamp: session.proData.expiryTimestamp,
+      token: tokenVal,
       message: '👑 PRO membership restored successfully on this device!',
     });
   }
 
   // ACTION 3: Verify 6-digit Code (entered manually in the modal)
   if (action === 'verify_code') {
-    if (!email || !code) {
+    if (!email || typeof email !== 'string' || !code || typeof code !== 'string') {
       return res.status(400).json({ error: 'Missing email or code' });
     }
 
     const cleanEmail = email.trim().toLowerCase();
     const cleanCode = code.trim();
+
+    if (!/^\d{6}$/.test(cleanCode)) {
+      return res.status(400).json({ error: 'Code must be a 6-digit number.' });
+    }
+
+    // ── Brute-force protection: max 5 failed attempts per IP+email ──
+    const clientIp = req.headers?.['x-real-ip'] ||
+                     req.headers?.['x-forwarded-for']?.split(',')[0]?.trim() ||
+                     req.socket?.remoteAddress ||
+                     'unknown';
+    const cleanIp = String(clientIp).replace(/[^a-zA-Z0-9_.-]/g, '_');
+    const attemptsKey = `tiledly_restore_attempts_${cleanIp}_${cleanEmail}`;
+    const attempts = await runRedisCommand(['INCR', attemptsKey]);
+    if (attempts === 1) {
+      // First attempt — set 20-minute expiry (matches code TTL)
+      await runRedisCommand(['EXPIRE', attemptsKey, '1200']);
+    }
+    if (attempts > 5) {
+      return res.status(429).json({
+        error: 'Too many failed attempts. Please request a new code.'
+      });
+    }
+
     const codeKey = `tiledly_restore_code_${cleanEmail}_${cleanCode}`;
     const rawSession = await runRedisCommand(['GET', codeKey]);
 
     if (!rawSession) {
-      return res.status(400).json({ error: 'Invalid or expired code. Please try again.' });
+      const remaining = 5 - attempts;
+      return res.status(400).json({
+        error: remaining > 0
+          ? `Invalid or expired code. ${remaining} attempt${remaining === 1 ? '' : 's'} remaining.`
+          : 'Too many failed attempts. Please request a new code.'
+      });
     }
 
     const session = typeof rawSession === 'string' ? JSON.parse(rawSession) : rawSession;
@@ -201,12 +247,21 @@ export default async function handler(req, res) {
     // Bind current deviceId to this PRO status in Redis!
     const deviceKey = `tiledly_pro_${deviceId}`;
     await runRedisCommand(['SET', deviceKey, proRecord]);
+
+    // Clean up: delete the used code, matching token, and attempts counter
     await runRedisCommand(['DEL', codeKey]);
+    if (session.magicToken) {
+      await runRedisCommand(['DEL', `tiledly_restore_token_${session.magicToken}`]);
+    }
+    await runRedisCommand(['DEL', attemptsKey]);
+
+    const tokenVal = createProToken(deviceId, session.proData.plan, session.proData.expiryTimestamp);
 
     return res.status(200).json({
       success: true,
       plan: session.proData.plan,
       expiryTimestamp: session.proData.expiryTimestamp,
+      token: tokenVal,
       message: '👑 PRO membership restored successfully on this device!',
     });
   }

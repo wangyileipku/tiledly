@@ -1,18 +1,45 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-L0NPW9E67F"></script>
+    <!-- Google Consent Mode v2 (Default Denied - GDPR / ePrivacy Compliant) -->
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
+      gtag('consent', 'default', {
+        'ad_storage': 'denied',
+        'ad_user_data': 'denied',
+        'ad_personalization': 'denied',
+        'analytics_storage': 'denied',
+        'region': [
+          'AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR',
+          'DE', 'GR', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL',
+          'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE', 'IS', 'LI', 'NO',
+          'GB', 'CH'
+        ],
+        'wait_for_update': 500
+      });
+      try {
+        var savedConsent = localStorage.getItem('tiledly_setting_cookie_consent');
+        if (savedConsent === '"all"' || savedConsent === 'all') {
+          gtag('consent', 'update', {
+            'ad_storage': 'granted',
+            'ad_user_data': 'granted',
+            'ad_personalization': 'granted',
+            'analytics_storage': 'granted'
+          });
+        }
+      } catch (_) {}
+    </script>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-L0NPW9E67F"></script>
+    <script>
       gtag('js', new Date());
-
       gtag('config', 'G-L0NPW9E67F');
     </script>
     <meta charset="UTF-8">
     <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <meta name="description" content="One daily challenge. Tap as fast as you can. Race against the world in Tiledly's speed puzzles.">
     <meta property="og:title" content="Tiledly — Daily Speed Challenge">
     <meta property="og:description" content="One daily challenge. Tap as fast as you can. Race against the world.">
     <meta property="og:image" content="https://tiledly.com/og-image.png">
@@ -31,6 +58,7 @@
     <meta name="apple-mobile-web-app-title" content="Tiledly">
     <meta name="application-name" content="Tiledly">
     <title>Tiledly — Daily Speed Challenge</title>
+    <link rel="canonical" href="https://tiledly.com/">
     <!-- Web App Manifest -->
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -73,6 +101,8 @@
                 <a href="privacy.html" class="btn-link text-muted">Privacy</a>
                 <span>•</span>
                 <a href="terms.html" class="btn-link text-muted">Terms</a>
+                <span>•</span>
+                <button id="home-cookie-settings-btn" class="btn-link text-muted">Cookies</button>
             </footer>
         </div>
 
@@ -178,17 +208,17 @@
         </div>
         
         <!-- Modal: Pre-Game Briefing -->
-        <div id="modal-briefing" class="modal-overlay hidden flex-center">
+        <div id="modal-briefing" class="modal-overlay hidden flex-center" role="dialog" aria-modal="true" aria-labelledby="briefing-title">
             <div class="modal-card p-3 max-w-400">
                 <div class="flex-between mb-2">
                     <div style="display: flex; align-items: center; gap: 10px;">
-                        <span id="briefing-emoji" style="font-size: 32px;">⚡</span>
+                        <span id="briefing-emoji" style="font-size: 32px;" aria-hidden="true">⚡</span>
                         <div>
                             <h3 id="briefing-title" class="text-accent" style="margin: 0; font-size: 20px;">Daily Challenge</h3>
                             <span id="briefing-badge" style="font-size: 11px; color: #ffcc00; text-transform: uppercase; font-weight: bold; letter-spacing: 0.5px;">Daily Event</span>
                         </div>
                     </div>
-                    <button id="briefing-close-btn" class="btn-icon">✕</button>
+                    <button id="briefing-close-btn" class="btn-icon" aria-label="Close challenge briefing">✕</button>
                 </div>
                 <p id="briefing-desc" class="text-white mb-2" style="font-size: 14px; font-weight: 500;"></p>
                 <div id="briefing-rules" class="modal-body text-muted mb-3" style="font-size: 13px; line-height: 1.6; background: rgba(255,255,255,0.04); padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08);">
@@ -199,11 +229,11 @@
         </div>
 
         <!-- Modal: How to Play -->
-        <div id="modal-how-to-play" class="modal-overlay hidden flex-center">
+        <div id="modal-how-to-play" class="modal-overlay hidden flex-center" role="dialog" aria-modal="true" aria-labelledby="how-to-play-title">
             <div class="modal-card p-3 max-w-400">
                 <div class="flex-between mb-2">
-                    <h3 class="text-accent">⚡ How to Play</h3>
-                    <button id="modal-close-btn" class="btn-icon">✕</button>
+                    <h3 id="how-to-play-title" class="text-accent">⚡ How to Play</h3>
+                    <button id="modal-close-btn" class="btn-icon" aria-label="Close how to play dialog">✕</button>
                 </div>
                 <div class="modal-body text-muted mb-3" style="font-size: 14px; line-height: 1.6; max-height: 60vh; overflow-y: auto;">
                     <p class="mb-2"><strong class="text-white">One challenge per day.</strong> Everyone worldwide plays the exact same grid.</p>
@@ -221,17 +251,17 @@
         </div>
 
         <!-- Modal: Tiledly PRO Upgrade -->
-        <div id="modal-pro" class="modal-overlay hidden flex-center">
+        <div id="modal-pro" class="modal-overlay hidden flex-center" role="dialog" aria-modal="true" aria-labelledby="pro-modal-title">
             <div class="modal-card p-3 max-w-400">
                 <div class="flex-between mb-2">
                     <div style="display: flex; align-items: center; gap: 10px;">
-                        <span style="font-size: 32px;">👑</span>
+                        <span style="font-size: 32px;" aria-hidden="true">👑</span>
                         <div>
-                            <h3 class="text-gold" style="margin: 0; font-size: 20px;">Tiledly PRO</h3>
+                            <h3 id="pro-modal-title" class="text-gold" style="margin: 0; font-size: 20px;">Tiledly PRO</h3>
                             <span id="pro-modal-status" class="pro-price-badge">$2.99 / mo</span>
                         </div>
                     </div>
-                    <button id="pro-modal-close-btn" class="btn-icon">✕</button>
+                    <button id="pro-modal-close-btn" class="btn-icon" aria-label="Close PRO upgrade dialog">✕</button>
                 </div>
                 
                 <p class="text-white mb-2" style="font-size: 14px; font-weight: 500;">
@@ -292,17 +322,17 @@
         </div>
 
         <!-- Modal: Daily Archive -->
-        <div id="modal-archive" class="modal-overlay hidden flex-center">
+        <div id="modal-archive" class="modal-overlay hidden flex-center" role="dialog" aria-modal="true" aria-labelledby="archive-modal-title">
             <div class="modal-card p-3 max-w-400" style="max-height: 82vh; display: flex; flex-direction: column;">
                 <div class="flex-between mb-2">
                     <div style="display: flex; align-items: center; gap: 10px;">
-                        <span style="font-size: 28px;">📅</span>
+                        <span style="font-size: 28px;" aria-hidden="true">📅</span>
                         <div>
-                            <h3 class="text-accent" style="margin: 0; font-size: 20px;">Daily Archive</h3>
+                            <h3 id="archive-modal-title" class="text-accent" style="margin: 0; font-size: 20px;">Daily Archive</h3>
                             <span class="text-muted" style="font-size: 11px;">Replay every past daily challenge</span>
                         </div>
                     </div>
-                    <button id="archive-close-btn" class="btn-icon">✕</button>
+                    <button id="archive-close-btn" class="btn-icon" aria-label="Close daily archive dialog">✕</button>
                 </div>
                 
                 <div id="archive-list" class="archive-list" style="overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 10px; padding: 4px 2px;">
@@ -312,9 +342,9 @@
         </div>
 
         <!-- PWA Install Banner (Mobile & Desktop) -->
-        <div id="pwa-install-banner" class="pwa-install-banner hidden">
+        <div id="pwa-install-banner" class="pwa-install-banner hidden" role="region" aria-label="App installation banner">
             <div class="pwa-banner-left">
-                <span class="pwa-banner-icon">⚡</span>
+                <span class="pwa-banner-icon" aria-hidden="true">⚡</span>
                 <div class="pwa-banner-text">
                     <span class="pwa-banner-title">Install Tiledly App</span>
                     <span class="pwa-banner-subtitle">Add to Home Screen for 1-tap daily access</span>
@@ -322,22 +352,37 @@
             </div>
             <div class="pwa-banner-actions">
                 <button id="pwa-install-btn" class="btn-pwa-install">Install</button>
-                <button id="pwa-dismiss-btn" class="btn-pwa-dismiss">✕</button>
+                <button id="pwa-dismiss-btn" class="btn-pwa-dismiss" aria-label="Dismiss app install banner">✕</button>
+            </div>
+        </div>
+
+        <!-- Cookie Consent Banner (GDPR / ePrivacy) -->
+        <div id="cookie-consent-banner" class="cookie-consent-banner hidden" role="region" aria-label="Cookie consent banner">
+            <div class="cookie-consent-header">
+                <span style="font-size: 22px;" aria-hidden="true">🍪</span>
+                <span class="cookie-consent-title">Cookie & Privacy Preferences</span>
+            </div>
+            <div class="cookie-consent-desc">
+                We use essential cookies for game saves and streak tracking. With your permission, we also use cookies for analytics and ads to keep Tiledly free. Read our <a href="privacy.html" target="_blank">Privacy Policy</a>.
+            </div>
+            <div class="cookie-consent-actions">
+                <button id="cookie-essential-btn" class="btn-cookie-essential">Essential Only</button>
+                <button id="cookie-accept-btn" class="btn-cookie-accept">Accept All</button>
             </div>
         </div>
 
         <!-- Modal: iOS Add to Home Screen Instructions -->
-        <div id="modal-ios-install" class="modal-overlay hidden flex-center">
+        <div id="modal-ios-install" class="modal-overlay hidden flex-center" role="dialog" aria-modal="true" aria-labelledby="ios-install-title">
             <div class="modal-card p-3 max-w-400">
                 <div class="flex-between mb-2">
                     <div style="display: flex; align-items: center; gap: 10px;">
-                        <span style="font-size: 28px;">📲</span>
+                        <span style="font-size: 28px;" aria-hidden="true">📲</span>
                         <div>
-                            <h3 class="text-accent" style="margin: 0; font-size: 19px;">Install on iPhone / iPad</h3>
+                            <h3 id="ios-install-title" class="text-accent" style="margin: 0; font-size: 19px;">Install on iPhone / iPad</h3>
                             <span class="text-muted" style="font-size: 11px;">Play like a native app without browser bars</span>
                         </div>
                     </div>
-                    <button id="ios-install-close-btn" class="btn-icon">✕</button>
+                    <button id="ios-install-close-btn" class="btn-icon" aria-label="Close iOS install instructions">✕</button>
                 </div>
                 <div class="modal-body text-white mb-3" style="font-size: 13px; line-height: 1.6; background: rgba(255,255,255,0.04); padding: 14px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.08);">
                     <p class="mb-2"><strong>1.</strong> Tap the <strong>Share</strong> button <span style="font-size: 16px;">⎋</span> at the bottom of Safari.</p>

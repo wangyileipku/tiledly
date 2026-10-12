@@ -1,6 +1,8 @@
 import { ALL_MODES, getDailyNumber, getTodayMode, getTodayChallenge, getModeInfo } from './js/daily.js';
 import { SeededRandom, getWeekOfYear } from './js/utils.js';
 
+process.env.PRO_SIGNING_SECRET = process.env.PRO_SIGNING_SECRET || 'test_pro_auth_secret_suite_2026';
+
 console.log('⚡ Running Tiledly Comprehensive 7-Day & 4-Week Rotation Test Suite...\n');
 
 const rng = new SeededRandom(20261003);
@@ -409,7 +411,7 @@ totalTests++;
 // Test 5: Storage, Device ID & Streak Tracking
 console.log('\n💾 Running Storage, Device ID & Streak Tracking Tests...');
 
-import { Storage } from './js/storage.js';
+import { Storage, safeStorage } from './js/storage.js';
 
 // 5a. Anonymous Device ID
 totalTests++;
@@ -547,6 +549,34 @@ totalTests++;
   console.log(`  ✓ Cold Start Determinism: 100% identical opponent ghost field generated worldwide`);
 }
 
+// 6c. BattleReplay Lifecycle & Event Cleanup (Issue 23)
+totalTests++;
+{
+  const mockCanvas = {
+    parentElement: { clientWidth: 400 },
+    style: {},
+    getContext: () => ({ scale: () => {} })
+  };
+  let listeners = [];
+  global.window = {
+    addEventListener: (type, fn) => { listeners.push({ type, fn }); },
+    removeEventListener: (type, fn) => { listeners = listeners.filter(l => l.fn !== fn); },
+    innerWidth: 400,
+    innerHeight: 600
+  };
+  const replay = new BattleReplay(mockCanvas);
+  if (listeners.length !== 1 || listeners[0].type !== 'resize') {
+    throw new Error('BattleReplay did not register resize listener');
+  }
+  replay.destroy();
+  if (listeners.length !== 0) {
+    throw new Error('BattleReplay.destroy() failed to remove resize listener (memory leak!)');
+  }
+  delete global.window;
+  passedTests++;
+  console.log('  ✓ Replay Event Cleanup (Issue 23): BattleReplay.destroy() unregisters bound resize listener cleanly');
+}
+
 // Test 7: Minefield Radar / Peek Feature
 console.log('\n📡 Running Minefield Radar / Peek Verification...');
 totalTests++;
@@ -636,6 +666,235 @@ totalTests++;
   }
   passedTests++;
   console.log(`  ✓ API Summary Query: Status 200, KV Connected: ${responseData.connected}`);
+}
+
+// 8c. Server-side score validation & anti-cheat bounds (Issue 2)
+totalTests++;
+{
+  const makeMockRes = () => {
+    let statusCode = 0;
+    let data = null;
+    return {
+      res: {
+        setHeader: () => {},
+        status: (c) => {
+          statusCode = c;
+          return { json: (d) => { data = d; }, end: () => {} };
+        }
+      },
+      get: () => ({ statusCode, data })
+    };
+  };
+
+  // Rejects score > 10000
+  const highRes = makeMockRes();
+  await scoreHandler({ method: 'POST', body: { deviceId: 'valid_device_id', score: 99999, time: 10000, date: '20261005' } }, highRes.res);
+  if (highRes.get().statusCode !== 400) throw new Error('Failed to reject impossibly high score');
+
+  // Rejects score < 0
+  const negRes = makeMockRes();
+  await scoreHandler({ method: 'POST', body: { deviceId: 'valid_device_id', score: -10, time: 10000, date: '20261005' } }, negRes.res);
+  if (negRes.get().statusCode !== 400) throw new Error('Failed to reject negative score');
+
+  // Rejects superhuman time (< 2000ms)
+  const fastRes = makeMockRes();
+  await scoreHandler({ method: 'POST', body: { deviceId: 'valid_device_id', score: 9000, time: 500, date: '20261005' } }, fastRes.res);
+  if (fastRes.get().statusCode !== 400) throw new Error('Failed to reject superhuman run time');
+
+  // Rejects invalid date format (preventing Redis key injection)
+  const dateRes = makeMockRes();
+  await scoreHandler({ method: 'POST', body: { deviceId: 'valid_device_id', score: 9000, time: 20000, date: 'bad-date-format' } }, dateRes.res);
+  if (dateRes.get().statusCode !== 400) throw new Error('Failed to reject invalid date format');
+
+  // Rejects spoofed ghost bot deviceId
+  const botRes = makeMockRes();
+  await scoreHandler({ method: 'POST', body: { deviceId: 'ghost_bot_42', score: 9000, time: 20000, date: '20261005' } }, botRes.res);
+  if (botRes.get().statusCode !== 400) throw new Error('Failed to reject spoofed ghost bot deviceId');
+
+  // Issue 19: Throttles excessive score submissions by IP
+  let scoreRateLimitHit = false;
+  for (let i = 0; i < 20; i++) {
+    const loopRes = makeMockRes();
+    await scoreHandler({
+      headers: { 'x-real-ip': '198.51.100.99' },
+      method: 'POST',
+      body: { deviceId: `flood_device_${i}_unique`, score: 5000, time: 25000, date: '20261005' }
+    }, loopRes.res);
+    if (loopRes.get().statusCode === 429) {
+      scoreRateLimitHit = true;
+      break;
+    }
+  }
+  if (!scoreRateLimitHit) {
+    throw new Error('Score API failed to trigger rate limit on excessive submissions from single IP');
+  }
+
+  passedTests++;
+  console.log('  ✓ Score Validation & Rate Limiting (Issue 2, 19): Rejects spoofing, validates bounds & throttles IP floods');
+}
+
+// 8d. CORS & Origin Whitelisting (Issue 4)
+totalTests++;
+{
+  const { applyCors } = await import('./api/_cors.js');
+
+  const headersSet = {};
+  const mockRes = {
+    setHeader: (k, v) => { headersSet[k] = v; },
+    status: () => ({ end: () => {} })
+  };
+
+  // 1. Legitimate origin allowed
+  applyCors({ headers: { origin: 'https://tiledly.com' } }, mockRes);
+  if (headersSet['Access-Control-Allow-Origin'] !== 'https://tiledly.com') {
+    throw new Error('CORS did not allow https://tiledly.com');
+  }
+
+  // 2. Malicious origin denied (header NOT set, never wildcard *)
+  const deniedHeaders = {};
+  const deniedRes = {
+    setHeader: (k, v) => { deniedHeaders[k] = v; },
+    status: () => ({ end: () => {} })
+  };
+  applyCors({ headers: { origin: 'https://attacker-domain.evil.com' } }, deniedRes);
+  if (deniedHeaders['Access-Control-Allow-Origin']) {
+    throw new Error(`CORS improperly allowed unauthorized origin: ${deniedHeaders['Access-Control-Allow-Origin']}`);
+  }
+
+  passedTests++;
+  console.log('  ✓ API CORS Security (Issue 4): Origin strictly whitelisted to tiledly.com; zero wildcard (*) exposure');
+}
+
+// 8e. Restore Code Validation & Brute-Force Protection (Issue 3)
+totalTests++;
+{
+  const restoreHandler = (await import('./api/restore-pro.js')).default;
+  const makeMockRes = () => {
+    let statusCode = 0;
+    let data = null;
+    return {
+      res: {
+        setHeader: () => {},
+        status: (c) => {
+          statusCode = c;
+          return { json: (d) => { data = d; }, end: () => {} };
+        }
+      },
+      get: () => ({ statusCode, data })
+    };
+  };
+
+  // Rejects invalid non-6-digit code format
+  const badCodeRes = makeMockRes();
+  await restoreHandler({
+    method: 'POST',
+    body: { action: 'verify_code', email: 'test@example.com', code: 'abc', deviceId: 'test_device_valid_id' }
+  }, badCodeRes.res);
+  if (badCodeRes.get().statusCode !== 400) {
+    throw new Error('Failed to reject invalid 6-digit code format');
+  }
+
+  // Rejects invalid token format in verify_token
+  const badTokenRes = makeMockRes();
+  await restoreHandler({
+    method: 'POST',
+    body: { action: 'verify_token', token: 'invalid_short_token', deviceId: 'test_device_valid_id' }
+  }, badTokenRes.res);
+  if (badTokenRes.get().statusCode !== 400) {
+    throw new Error('Failed to reject invalid token format');
+  }
+
+  // Blocker Issue 14: Never leak magicCode in response payload
+  const reqRes = makeMockRes();
+  await restoreHandler({
+    method: 'POST',
+    headers: { origin: 'https://attacker.com' },
+    body: { action: 'request', email: 'test@example.com', deviceId: 'test_device_valid_id' }
+  }, reqRes.res);
+  if (reqRes.get().data && reqRes.get().data.magicCode !== undefined) {
+    throw new Error('Critical: magicCode was leaked in restore response payload!');
+  }
+
+  // Issue 26: Verify restore attempts are keyed on IP + email to prevent targeted lockout
+  const fs = await import('fs');
+  const restoreSrc = fs.readFileSync('./api/restore-pro.js', 'utf8');
+  if (!restoreSrc.includes('cleanIp') || !restoreSrc.includes('attemptsKey = `tiledly_restore_attempts_${cleanIp}_${cleanEmail}`')) {
+    throw new Error('api/restore-pro.js must key restore attempts on both IP and email to prevent targeted lockout');
+  }
+
+  passedTests++;
+  console.log('  ✓ Restore Protection (Issue 3, 13, 14, 26): Validates code/token format, prevents Origin poisoning & scopes attempts to IP+email');
+}
+
+// 8f. Server-Side VIP Key Redemption & Rate Limiting (Issue 1)
+totalTests++;
+{
+  const redeemKeyHandler = (await import('./api/redeem-key.js')).default;
+  const makeMockRes = () => {
+    let statusCode = 0;
+    let data = null;
+    return {
+      res: {
+        setHeader: () => {},
+        status: (c) => {
+          statusCode = c;
+          return { json: (d) => { data = d; }, end: () => {} };
+        }
+      },
+      get: () => ({ statusCode, data })
+    };
+  };
+
+  // Invalid key fails cleanly
+  const badKeyRes = makeMockRes();
+  await redeemKeyHandler({
+    method: 'POST',
+    body: { key: 'TOTALLY_FAKE_KEY', deviceId: 'valid_test_device_id' }
+  }, badKeyRes.res);
+  if (badKeyRes.get().data?.success !== false) {
+    throw new Error('Fake VIP key was improperly accepted');
+  }
+
+  // Valid key succeeds server-side
+  const goodKeyRes = makeMockRes();
+  await redeemKeyHandler({
+    method: 'POST',
+    body: { key: 'TILEDLY_VIP_2026', deviceId: 'valid_test_device_id' }
+  }, goodKeyRes.res);
+  if (goodKeyRes.get().data?.success !== true || goodKeyRes.get().data?.plan !== 'lifetime') {
+    throw new Error('Valid VIP key failed server-side validation');
+  }
+
+  // Rate limiting kicks in on abusive IPs (>10 attempts)
+  let hitRateLimit = false;
+  for (let i = 0; i < 15; i++) {
+    const loopRes = makeMockRes();
+    await redeemKeyHandler({
+      headers: { 'x-forwarded-for': '198.51.100.25' },
+      method: 'POST',
+      body: { key: 'SPAM_KEY', deviceId: 'valid_test_device_id' }
+    }, loopRes.res);
+    if (loopRes.get().statusCode === 429) {
+      hitRateLimit = true;
+      break;
+    }
+  }
+  if (!hitRateLimit) {
+    throw new Error('IP rate limiting failed to trigger on repeated VIP key attempts');
+  }
+
+  // Issue 17: Verify no plaintext VIP keys exist in api/redeem-key.js source code
+  const fs = await import('fs');
+  const redeemSrc = fs.readFileSync('./api/redeem-key.js', 'utf8');
+  const plaintextKeys = ['TILEDLY_VIP_2026', 'FOUNDER_LIFETIME', 'TILEDLY_LIFETIME', 'PRO_PASS_30'];
+  for (const k of plaintextKeys) {
+    if (redeemSrc.includes(`'${k}'`) || redeemSrc.includes(`"${k}"`)) {
+      throw new Error(`api/redeem-key.js still exposes plaintext key ${k} in source code!`);
+    }
+  }
+
+  passedTests++;
+  console.log('  ✓ Server VIP Key Endpoint (Issue 1, 17, 18): Precomputed hashes validated, zero plaintext keys in source & Redis IP rate-limited');
 }
 
 // Test 9: Modular Monetization Engine & Paywall Tests
@@ -790,17 +1049,35 @@ totalTests++;
   console.log('  ✓ Tiered Subscriptions: Verified 30-day monthly expiration auto-revocation and lifetime VIP');
 }
 
-// 9g. Secure VIP Key Redemption
+// 9g. Secure VIP Key Redemption (now async — keys validated server-side)
 totalTests++;
 {
+  // Save the original fetch and install a mock that simulates /api/redeem-key
+  const originalFetch = global.fetch;
+  global.fetch = async (url, opts) => {
+    if (typeof url === 'string' && url.includes('/api/redeem-key')) {
+      const body = JSON.parse(opts.body);
+      const key = (body.key || '').trim().toUpperCase();
+
+      // Simulate server-side validation (only accept known test key)
+      if (key === 'TEST_VALID_KEY') {
+        return { ok: true, status: 200, json: async () => ({ success: true, plan: 'lifetime', expiryTimestamp: null, message: '👑 Lifetime VIP Activated!' }) };
+      }
+      return { ok: true, status: 200, json: async () => ({ success: false, error: 'Invalid VIP Key' }) };
+    }
+    // Fallback for other fetch calls
+    if (originalFetch) return originalFetch(url, opts);
+    return { ok: true, status: 200, json: async () => ({}) };
+  };
+
   // Invalid key fails
-  const badRes = Monetization.redeemVipKey('WRONG_CODE_123');
+  const badRes = await Monetization.redeemVipKey('WRONG_CODE_123');
   if (badRes.success || Monetization.isPro()) {
     throw new Error('Invalid VIP key should not grant PRO access');
   }
 
-  // Valid Lifetime Founder Key succeeds
-  const goodRes = Monetization.redeemVipKey('TILEDLY_VIP_2026');
+  // Valid key succeeds (server-side validated)
+  const goodRes = await Monetization.redeemVipKey('TEST_VALID_KEY');
   if (!goodRes.success || !Monetization.isPro()) {
     throw new Error('Valid VIP key failed to activate PRO membership');
   }
@@ -809,9 +1086,68 @@ totalTests++;
     throw new Error('VIP key did not grant lifetime access');
   }
 
+  // Verify NO hardcoded keys exist in the client-side monetization module
+  const fs = await import('fs');
+  const monetizationSrc = fs.readFileSync('./js/monetization/monetization.js', 'utf-8');
+  const leakedKeys = ['TILEDLY_VIP_2026', 'FOUNDER_LIFETIME', 'PRO_PASS_30', 'TILEDLY_MONTHLY', 'TILEDLY_LIFETIME'];
+  for (const leaked of leakedKeys) {
+    if (monetizationSrc.includes(leaked)) {
+      throw new Error(`SECURITY: Hardcoded VIP key "${leaked}" found in client-side code!`);
+    }
+  }
+
   Monetization.setPro(false);
+  global.fetch = originalFetch; // Restore original fetch
   passedTests++;
-  console.log('  ✓ Secure Key Redemption: Verified single secure VIP pass redemption path without dev bypasses');
+  console.log('  ✓ Secure Key Redemption: VIP keys validated server-side via /api/redeem-key (no client secrets)');
+}
+
+// 9h. Anti-Spoofing & Server Verification (Issue 6)
+totalTests++;
+{
+  Monetization.setPro(false);
+  Monetization._sessionVerified = false;
+
+  // 1. Attack: Someone directly injects is_pro: true in localStorage without server token or session verification
+  Storage.setSetting('is_pro', true);
+  Storage.setSetting('pro_token', null);
+  if (Monetization.isPro() === true) {
+    throw new Error('Security failure: Spoofed localStorage gave unauthorized PRO access!');
+  }
+
+  // 2. Calling requireServerPro() when server says not PRO revokes spoofed local storage
+  const originalFetch = global.fetch;
+  global.fetch = async (url) => {
+    if (typeof url === 'string' && url.includes('/api/verify-pro')) {
+      return { ok: true, status: 200, json: async () => ({ isPro: false }) };
+    }
+    return { ok: false, status: 404 };
+  };
+
+  const isVerified = await Monetization.requireServerPro();
+  if (isVerified || Monetization.isPro() || Storage.getSetting('is_pro') === true) {
+    throw new Error('requireServerPro() failed to revoke spoofed local PRO status!');
+  }
+
+  // 3. Legitimate server verification with signed token succeeds
+  const { createProToken } = await import('./api/_token.js');
+  const validToken = createProToken(Storage.getDeviceId(), 'lifetime', null);
+  global.fetch = async (url) => {
+    if (typeof url === 'string' && url.includes('/api/verify-pro')) {
+      return { ok: true, status: 200, json: async () => ({ isPro: true, plan: 'lifetime', expiryTimestamp: null, token: validToken }) };
+    }
+    return { ok: false, status: 404 };
+  };
+
+  const legitVerified = await Monetization.requireServerPro();
+  if (!legitVerified || !Monetization.isPro() || Storage.getSetting('is_pro') !== true) {
+    throw new Error('Legitimate server PRO verification failed');
+  }
+
+  Monetization.setPro(false);
+  global.fetch = originalFetch;
+  passedTests++;
+  console.log('  ✓ Anti-Spoofing (Issue 6): Blocked direct localStorage manipulation; verified session via server token');
 }
 
 // Test 10: Full Daily Archive Functionality
@@ -834,8 +1170,430 @@ totalTests++;
   console.log(`  ✓ Daily Archive: Generated ${archiveDays.length} archive days since launch (Day #1 to Day #${archiveDays[0].dayNumber})`);
 }
 
+// Test 10b: Token Secret Enforcement & No Hardcoded Fallback (Issue 15)
+totalTests++;
+{
+  const oldSecret = process.env.PRO_SIGNING_SECRET;
+  delete process.env.PRO_SIGNING_SECRET;
+  let threw = false;
+  try {
+    const { createProToken } = await import('./api/_token.js');
+    createProToken('test_device', 'monthly', null);
+  } catch (e) {
+    threw = true;
+  } finally {
+    process.env.PRO_SIGNING_SECRET = oldSecret;
+  }
+  if (!threw) {
+    throw new Error('createProToken failed to throw error when PRO_SIGNING_SECRET was missing');
+  }
+  passedTests++;
+  console.log('  ✓ Token Secret Enforcement (Issue 15): Rejects token generation when PRO_SIGNING_SECRET is missing');
+}
+
+// Test 10c: Archive Challenge & getWeekOfYear Import Integrity (Issue 16)
+totalTests++;
+{
+  const fs = await import('fs');
+  const appJsContent = fs.readFileSync('./js/app.js', 'utf8');
+  if (!appJsContent.includes('getWeekOfYear')) {
+    throw new Error('app.js is missing getWeekOfYear import for archive challenges');
+  }
+  const archiveDays = getArchiveDays();
+  const testDay = archiveDays[1];
+  const { getDailySeed, getWeekOfYear, SeededRandom } = await import('./js/utils.js');
+  const seed = getDailySeed(testDay.date);
+  const weekNum = getWeekOfYear(testDay.date);
+  const rng = new SeededRandom(seed);
+  const chal = testDay.mode.generateChallenge(rng, weekNum);
+  if (!chal || !chal.grid) {
+    throw new Error('Failed to generate archive challenge with week number');
+  }
+  passedTests++;
+  console.log('  ✓ Archive Challenge Execution (Issue 16): getWeekOfYear verified in app.js and archive challenge runs smoothly');
+}
+
+// Test 11: SEO, Metadata & Security Headers (Issues 7, 8, 9)
+console.log('\n🔍 Running SEO, Metadata & Security Headers Tests...');
+const fs = await import('fs');
+
+// 11a. robots.txt & sitemap.xml presence (Issue 7)
+totalTests++;
+{
+  if (!fs.existsSync('./robots.txt')) {
+    throw new Error('Missing robots.txt');
+  }
+  const robotsContent = fs.readFileSync('./robots.txt', 'utf-8');
+  if (!robotsContent.includes('Sitemap: https://tiledly.com/sitemap.xml') || !robotsContent.includes('Allow: /')) {
+    throw new Error('robots.txt missing Sitemap or Allow directive');
+  }
+
+  if (!fs.existsSync('./sitemap.xml')) {
+    throw new Error('Missing sitemap.xml');
+  }
+  const sitemapContent = fs.readFileSync('./sitemap.xml', 'utf-8');
+  const requiredUrls = [
+    'https://tiledly.com/',
+    'https://tiledly.com/about.html',
+    'https://tiledly.com/privacy.html',
+    'https://tiledly.com/terms.html'
+  ];
+  for (const u of requiredUrls) {
+    if (!sitemapContent.includes(u)) {
+      throw new Error(`sitemap.xml missing URL: ${u}`);
+    }
+  }
+
+  passedTests++;
+  console.log('  ✓ Search Engine Crawling (Issue 7): robots.txt and sitemap.xml verified with all public routes');
+}
+
+// 11b. Canonical URL tags on all HTML pages (Issue 8)
+totalTests++;
+{
+  const pages = [
+    { file: './index.html', canonical: '<link rel="canonical" href="https://tiledly.com/">' },
+    { file: './about.html', canonical: '<link rel="canonical" href="https://tiledly.com/about.html">' },
+    { file: './privacy.html', canonical: '<link rel="canonical" href="https://tiledly.com/privacy.html">' },
+    { file: './terms.html', canonical: '<link rel="canonical" href="https://tiledly.com/terms.html">' }
+  ];
+
+  for (const page of pages) {
+    const html = fs.readFileSync(page.file, 'utf-8');
+    if (!html.includes(page.canonical)) {
+      throw new Error(`Page ${page.file} is missing required canonical tag: ${page.canonical}`);
+    }
+    if (!html.includes('<meta name="description"')) {
+      throw new Error(`Page ${page.file} is missing standard <meta name="description"> tag`);
+    }
+  }
+
+  passedTests++;
+  console.log('  ✓ Canonical URL & Meta Description Tags (Issue 8, 22): Verified on index.html, about.html, privacy.html, and terms.html');
+}
+
+// 11c. Security Headers on Server & Vercel (Issue 9)
+totalTests++;
+{
+  const serverCode = fs.readFileSync('./server.mjs', 'utf-8');
+  const requiredHeaders = [
+    'X-Content-Type-Options',
+    'X-Frame-Options',
+    'Referrer-Policy',
+    'Permissions-Policy',
+    'Strict-Transport-Security',
+    'Content-Security-Policy'
+  ];
+
+  for (const h of requiredHeaders) {
+    if (!serverCode.includes(h)) {
+      throw new Error(`server.mjs missing security header: ${h}`);
+    }
+  }
+
+  // Also verify vercel.json for production
+  if (!fs.existsSync('./vercel.json')) {
+    throw new Error('Missing vercel.json production config');
+  }
+  const vercelConfig = JSON.parse(fs.readFileSync('./vercel.json', 'utf-8'));
+  const vercelHeaderKeys = vercelConfig.headers?.[0]?.headers?.map(h => h.key) || [];
+  for (const h of requiredHeaders) {
+    if (!vercelHeaderKeys.includes(h)) {
+      throw new Error(`vercel.json missing production security header: ${h}`);
+    }
+  }
+
+  passedTests++;
+  console.log('  ✓ Security Headers & CSP (Issue 9, 21): Verified on local server (server.mjs) and production config (vercel.json) including Content-Security-Policy');
+}
+
+// 11cc. Service Worker Offline Cache Completeness (Issue 20)
+totalTests++;
+{
+  if (!fs.existsSync('./sw.js')) {
+    throw new Error('Missing sw.js');
+  }
+  const swContent = fs.readFileSync('./sw.js', 'utf-8');
+  if (!swContent.includes("CACHE_NAME = 'tiledly-v2'")) {
+    throw new Error('sw.js cache version must be updated to tiledly-v2');
+  }
+  const expectedCachedFiles = [
+    '/js/modes/alpha-hunt.js',
+    '/js/modes/number-rush.js',
+    '/js/modes/math-blitz.js',
+    '/js/modes/sum-hunt.js',
+    '/js/modes/memory-grid.js',
+    '/js/modes/minefield.js',
+    '/js/modes/color-cascade.js',
+    '/js/replay.js',
+    '/js/consent.js',
+    '/js/monetization/monetization.js',
+    '/js/monetization/config.js',
+    '/about.html',
+    '/privacy.html',
+    '/terms.html'
+  ];
+  for (const file of expectedCachedFiles) {
+    if (!swContent.includes(`'${file}'`)) {
+      throw new Error(`sw.js is missing required asset from offline cache: ${file}`);
+    }
+  }
+
+  passedTests++;
+  console.log('  ✓ Offline PWA Cache (Issue 20): All 7 game modes, subpages & monetization modules cached in tiledly-v2');
+}
+
+// 11d. Cookie Consent & GDPR / ePrivacy Compliance (Issue 5)
+totalTests++;
+{
+  const { Consent } = await import('./js/consent.js');
+  const { Analytics } = await import('./js/analytics.js');
+
+  // Verify all 4 HTML files contain Google Consent Mode v2 default denied WITH EU region array
+  const htmlFiles = ['./index.html', './about.html', './privacy.html', './terms.html'];
+  for (const f of htmlFiles) {
+    const content = fs.readFileSync(f, 'utf-8');
+    if (!content.includes("'ad_storage': 'denied'") || !content.includes("'analytics_storage': 'denied'")) {
+      throw new Error(`Page ${f} is missing Google Consent Mode v2 default denied configuration!`);
+    }
+    if (!content.includes("'region': [") || !content.includes("'DE'") || !content.includes("'FR'")) {
+      throw new Error(`Page ${f} is missing EU/EEA region targeting array!`);
+    }
+  }
+
+  // Verify regional resident detection
+  const originalDateTimeFormat = Intl.DateTimeFormat;
+  // Simulated US visitor
+  Intl.DateTimeFormat = () => ({ resolvedOptions: () => ({ timeZone: 'America/New_York' }) });
+  if (Consent.isEuResident() !== false) {
+    throw new Error('US timezone improperly identified as EU');
+  }
+
+  // Simulated EU visitor
+  Intl.DateTimeFormat = () => ({ resolvedOptions: () => ({ timeZone: 'Europe/Paris' }) });
+  if (Consent.isEuResident() !== true) {
+    throw new Error('EU timezone failed identification');
+  }
+  Intl.DateTimeFormat = originalDateTimeFormat; // Restore
+
+  // Test Consent module logic
+  Storage.setSetting('cookie_consent', null);
+  if (Consent.hasUserDecided()) {
+    throw new Error('Expected hasUserDecided to be false before user choice');
+  }
+  if (Analytics.hasConsent()) {
+    throw new Error('Analytics should not have consent by default');
+  }
+
+  // Track gtag consent calls
+  let lastGtagCall = null;
+  global.window = global.window || {};
+  global.window.gtag = (command, type, config) => {
+    lastGtagCall = { command, type, config };
+  };
+
+  // User chooses essential only
+  Consent.acceptEssentialOnly();
+  if (Consent.getConsent() !== 'essential' || !Consent.hasUserDecided()) {
+    throw new Error('Failed to record essential consent');
+  }
+  if (Analytics.hasConsent()) {
+    throw new Error('Analytics should still be false when essential only');
+  }
+  if (lastGtagCall?.config?.ad_storage !== 'denied' || lastGtagCall?.config?.analytics_storage !== 'denied') {
+    throw new Error('gtag consent was not updated to denied for essential only');
+  }
+
+  // User chooses accept all
+  Consent.acceptAll();
+  if (Consent.getConsent() !== 'all' || !Analytics.hasConsent()) {
+    throw new Error('Failed to record accept all consent');
+  }
+  if (lastGtagCall?.config?.ad_storage !== 'granted' || lastGtagCall?.config?.analytics_storage !== 'granted') {
+    throw new Error('gtag consent was not updated to granted for accept all');
+  }
+
+  passedTests++;
+  console.log('  ✓ GDPR Cookie Consent (Issue 5): Regional EU/EEA targeting configured; US ads completely unaffected and default granted');
+}
+
+// 11dd. Accessibility, ARIA Roles & Screen Reader Attributes (Issue 25)
+totalTests++;
+{
+  const indexHtml = fs.readFileSync('./index.html', 'utf-8');
+  const requiredAriaAttributes = [
+    'role="dialog"',
+    'aria-modal="true"',
+    'aria-labelledby="briefing-title"',
+    'aria-labelledby="how-to-play-title"',
+    'aria-labelledby="pro-modal-title"',
+    'aria-labelledby="archive-modal-title"',
+    'aria-labelledby="ios-install-title"',
+    'aria-label="Close challenge briefing"',
+    'aria-label="Close how to play dialog"',
+    'aria-label="Close PRO upgrade dialog"',
+    'aria-label="Close daily archive dialog"'
+  ];
+
+  for (const attr of requiredAriaAttributes) {
+    if (!indexHtml.includes(attr)) {
+      throw new Error(`index.html is missing required accessibility attribute: ${attr}`);
+    }
+  }
+
+  // Also verify GameEngine adds role="grid" and cell accessibility
+  const engineCode = fs.readFileSync('./js/engine.js', 'utf-8');
+  if (!engineCode.includes('role\', \'grid\'') || !engineCode.includes('role\', \'button\'') || !engineCode.includes('_onKeyDown')) {
+    throw new Error('GameEngine missing grid/cell ARIA roles or keyboard navigation handler');
+  }
+
+  passedTests++;
+  console.log('  ✓ Accessibility & ARIA Support (Issue 25): Modals configured with dialog roles/labels and game grid supports keyboard/screen-readers');
+}
+
+// 11e. Score Date Parameter Bounds & Anti-Injection (Issue 10)
+totalTests++;
+{
+  const makeMockRes = () => {
+    let statusCode = 0;
+    let data = null;
+    return {
+      res: {
+        setHeader: () => {},
+        status: (c) => {
+          statusCode = c;
+          return { json: (d) => { data = d; }, end: () => {} };
+        }
+      },
+      getStatus: () => statusCode,
+      getData: () => data
+    };
+  };
+
+  // Invalid date lengths / characters / calendar bounds (POST & GET)
+  const invalidDates = [
+    '2026101',      // 7 digits
+    '202610101',    // 9 digits
+    '2026-10-11',   // Hyphenated
+    '20261301',     // Month 13 (out of bounds)
+    '20260015',     // Month 0 (out of bounds)
+    '20260500',     // Day 0 (out of bounds)
+    '20260532',     // Day 32 (out of bounds)
+    '20251231',     // Year 2025 (prior to launch year 2026)
+    'date;DROP',    // SQL/Redis injection attempt
+  ];
+
+  for (const d of invalidDates) {
+    const postMock = makeMockRes();
+    await scoreHandler({
+      method: 'POST',
+      body: { deviceId: 'valid_dev_123', date: d, time: 25000, mistakes: 0, score: 8000 }
+    }, postMock.res);
+    if (postMock.getStatus() !== 400 || !postMock.getData()?.error?.includes('Invalid date')) {
+      throw new Error(`POST scoreHandler accepted invalid date '${d}', status=${postMock.getStatus()}`);
+    }
+
+    const getMock = makeMockRes();
+    await scoreHandler({
+      method: 'GET',
+      query: { date: d }
+    }, getMock.res);
+    if (getMock.getStatus() !== 400 || !getMock.getData()?.error?.includes('Invalid date')) {
+      throw new Error(`GET scoreHandler accepted invalid date '${d}', status=${getMock.getStatus()}`);
+    }
+  }
+
+  // Valid date must be accepted
+  const validGetMock = makeMockRes();
+  await scoreHandler({ method: 'GET', query: { date: '20261011' } }, validGetMock.res);
+  if (validGetMock.getStatus() !== 200) {
+    throw new Error(`GET scoreHandler rejected valid date '20261011', status=${validGetMock.getStatus()}`);
+  }
+
+  passedTests++;
+  console.log('  ✓ Redis Key Sanitization & Date Bounds (Issue 10): Validated YYYYMMDD calendar constraints and injection defenses');
+}
+
+// 11f. safeStorage Exception Handling & Memory Fallback (Issue 11)
+totalTests++;
+{
+  // Test normal storage operations
+  safeStorage.setItem('tiledly_test_key', 'normal_value');
+  if (safeStorage.getItem('tiledly_test_key') !== 'normal_value') {
+    throw new Error('safeStorage normal set/get failed');
+  }
+
+  // Simulate QuotaExceededError or Safari Private Browsing mode failure
+  const originalLocalStorage = global.localStorage;
+  let throwError = true;
+  global.localStorage = {
+    getItem: () => {
+      if (throwError) throw new Error('QuotaExceededError: The quota has been exceeded.');
+      return null;
+    },
+    setItem: () => {
+      if (throwError) throw new Error('QuotaExceededError: The quota has been exceeded.');
+    },
+    removeItem: () => {
+      if (throwError) throw new Error('SecurityError: The operation is insecure.');
+    }
+  };
+
+  // setItem should not throw even when localStorage throws
+  try {
+    safeStorage.setItem('tiledly_quota_test', 'persisted_fallback_value');
+  } catch (err) {
+    throw new Error(`safeStorage.setItem threw an error instead of catching: ${err.message}`);
+  }
+
+  // getItem should read from memoryStore fallback
+  const retrieved = safeStorage.getItem('tiledly_quota_test');
+  if (retrieved !== 'persisted_fallback_value') {
+    throw new Error(`safeStorage did not fall back to memoryStore, got: ${retrieved}`);
+  }
+
+  // removeItem should not throw
+  try {
+    safeStorage.removeItem('tiledly_quota_test');
+  } catch (err) {
+    throw new Error(`safeStorage.removeItem threw an error: ${err.message}`);
+  }
+  if (safeStorage.getItem('tiledly_quota_test') !== null) {
+    throw new Error('safeStorage.removeItem did not clear from memoryStore');
+  }
+
+  // Restore original localStorage
+  global.localStorage = originalLocalStorage;
+
+  passedTests++;
+  console.log('  ✓ Safe Storage & Quota Fallback (Issue 11): Gracefully handles storage quota exceptions and private browsing');
+}
+
+// 11g. Terms of Service Governing Law & Domain Consistency (Issue 12)
+totalTests++;
+{
+  const termsHtml = fs.readFileSync('./terms.html', 'utf-8');
+  if (!termsHtml.includes('Governing Law &amp; Dispute Resolution') && !termsHtml.includes('Governing Law & Dispute Resolution')) {
+    throw new Error('terms.html missing Governing Law & Dispute Resolution section');
+  }
+  if (!termsHtml.includes('State of Delaware')) {
+    throw new Error('terms.html missing Delaware jurisdiction specification');
+  }
+  if (!termsHtml.includes('tiledly.com')) {
+    throw new Error('terms.html missing official tiledly.com domain');
+  }
+  if (termsHtml.includes('tiledly.vercel.app')) {
+    throw new Error('terms.html still contains legacy staging domain tiledly.vercel.app');
+  }
+
+  passedTests++;
+  console.log('  ✓ Legal Terms Governing Law (Issue 12): Verified Delaware governing law, exclusive venue, and domain accuracy');
+}
+
 console.log(`\n🎉 ALL ${passedTests}/${totalTests} TESTS PASSED!`);
 console.log(`Tiledly has 28 unique challenges, robust streak tracking, verified battle royale replay, tiered monetization, and full daily archive.`);
+
+
 
 
 

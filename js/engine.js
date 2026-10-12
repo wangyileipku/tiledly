@@ -7,8 +7,10 @@ export class GameEngine {
     this.timerRunning = false;
     this.tapHandler = null;
     this._onTap = this._onTap.bind(this);
+    this._onKeyDown = this._onKeyDown.bind(this);
     this.gridContainerEl.addEventListener('touchend', this._onTap);
     this.gridContainerEl.addEventListener('click', this._onTap);
+    this.gridContainerEl.addEventListener('keydown', this._onKeyDown);
     this.cells = [];
     this.ignoreNextClick = false;
   }
@@ -16,11 +18,16 @@ export class GameEngine {
   setupGrid(config) {
     this.gridContainerEl.innerHTML = '';
     this.gridContainerEl.style.gridTemplateColumns = `repeat(${config.cols}, 1fr)`;
+    this.gridContainerEl.setAttribute('role', 'grid');
+    this.gridContainerEl.setAttribute('aria-label', 'Game Grid');
     this.cells = [];
 
     config.cells.forEach(cellData => {
       const cellEl = document.createElement('div');
       cellEl.classList.add('cell');
+      cellEl.setAttribute('role', 'button');
+      cellEl.setAttribute('tabindex', '0');
+      cellEl.setAttribute('aria-label', String(cellData.display || `Tile ${cellData.id + 1}`));
       if (cellData.classes) {
         cellEl.classList.add(...cellData.classes);
       }
@@ -100,11 +107,25 @@ export class GameEngine {
     }
   }
 
+  _onKeyDown(e) {
+    if (e.key === 'Enter' || e.key === ' ') {
+      const target = e.target;
+      if (target && target.classList.contains('cell')) {
+        e.preventDefault();
+        const index = parseInt(target.dataset.index, 10);
+        if (!isNaN(index) && this.tapHandler) {
+          this.tapHandler(index, this.cells[index]?.data);
+        }
+      }
+    }
+  }
+
   updateCell(index, updates) {
     const cell = this.cells[index];
     if (!cell) return;
     if (updates.display !== undefined) {
       cell.element.textContent = updates.display;
+      cell.element.setAttribute('aria-label', String(updates.display));
     }
     if (updates.color !== undefined) {
       cell.element.style.backgroundColor = updates.color;
@@ -121,8 +142,12 @@ export class GameEngine {
     if (updates.disabled !== undefined) {
       if (updates.disabled) {
         cell.element.classList.add('disabled');
+        cell.element.setAttribute('aria-disabled', 'true');
+        cell.element.removeAttribute('tabindex');
       } else {
         cell.element.classList.remove('disabled');
+        cell.element.removeAttribute('aria-disabled');
+        cell.element.setAttribute('tabindex', '0');
       }
     }
   }
@@ -194,6 +219,7 @@ export class GameEngine {
     this.stopTimer();
     this.gridContainerEl.removeEventListener('touchend', this._onTap);
     this.gridContainerEl.removeEventListener('click', this._onTap);
+    this.gridContainerEl.removeEventListener('keydown', this._onKeyDown);
     this.gridContainerEl.innerHTML = '';
     this.cells = [];
     this.tapHandler = null;

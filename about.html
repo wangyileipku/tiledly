@@ -1,18 +1,46 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-L0NPW9E67F"></script>
+    <!-- Google Consent Mode v2 (Default Denied - GDPR / ePrivacy Compliant) -->
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
+      gtag('consent', 'default', {
+        'ad_storage': 'denied',
+        'ad_user_data': 'denied',
+        'ad_personalization': 'denied',
+        'analytics_storage': 'denied',
+        'region': [
+          'AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR',
+          'DE', 'GR', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL',
+          'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE', 'IS', 'LI', 'NO',
+          'GB', 'CH'
+        ],
+        'wait_for_update': 500
+      });
+      try {
+        var savedConsent = localStorage.getItem('tiledly_setting_cookie_consent');
+        if (savedConsent === '"all"' || savedConsent === 'all') {
+          gtag('consent', 'update', {
+            'ad_storage': 'granted',
+            'ad_user_data': 'granted',
+            'ad_personalization': 'granted',
+            'analytics_storage': 'granted'
+          });
+        }
+      } catch (_) {}
+    </script>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-L0NPW9E67F"></script>
+    <script>
       gtag('js', new Date());
-
       gtag('config', 'G-L0NPW9E67F');
     </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <meta name="description" content="Master daily speed challenges. Compare scores, train in practice mode, and compete globally.">
     <title>About & Daily Game Guide — Tiledly</title>
+    <link rel="canonical" href="https://tiledly.com/about.html">
     <meta property="og:title" content="About & Daily Game Guide — Tiledly">
     <meta property="og:description" content="Master daily speed challenges. Compare scores, train in practice mode, and compete globally.">
     <meta property="og:image" content="https://tiledly.com/og-image.png">

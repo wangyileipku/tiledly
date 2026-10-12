@@ -1,23 +1,42 @@
 const PREFIX = 'tiledly_';
 
 const memoryStore = {};
-const safeStorage = {
+let isLocalStorageWorking = true;
+
+export const safeStorage = {
   getItem(key) {
-    if (typeof localStorage !== 'undefined') return localStorage.getItem(key);
-    return memoryStore[key] || null;
+    if (isLocalStorageWorking && typeof localStorage !== 'undefined') {
+      try {
+        const val = localStorage.getItem(key);
+        if (val !== null) return val;
+      } catch (e) {
+        console.warn('localStorage.getItem failed (private browsing?), using in-memory store:', e.message);
+        isLocalStorageWorking = false;
+      }
+    }
+    return memoryStore[key] ?? null;
   },
   setItem(key, value) {
-    if (typeof localStorage !== 'undefined') {
-      localStorage.setItem(key, value);
-    } else {
-      memoryStore[key] = String(value);
+    const strVal = String(value);
+    memoryStore[key] = strVal;
+    if (isLocalStorageWorking && typeof localStorage !== 'undefined') {
+      try {
+        localStorage.setItem(key, strVal);
+      } catch (e) {
+        console.warn('localStorage.setItem failed (quota or private mode), using in-memory store:', e.message);
+        isLocalStorageWorking = false;
+      }
     }
   },
   removeItem(key) {
-    if (typeof localStorage !== 'undefined') {
-      localStorage.removeItem(key);
-    } else {
-      delete memoryStore[key];
+    delete memoryStore[key];
+    if (isLocalStorageWorking && typeof localStorage !== 'undefined') {
+      try {
+        localStorage.removeItem(key);
+      } catch (e) {
+        console.warn('localStorage.removeItem failed, using in-memory store:', e.message);
+        isLocalStorageWorking = false;
+      }
     }
   }
 };

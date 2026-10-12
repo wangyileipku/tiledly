@@ -9,9 +9,10 @@ export class BattleReplay {
     this.startTime = 0;
     this.duration = 8000;
     
+    this._boundResize = this.resize.bind(this);
     this.resize();
     if (typeof window !== 'undefined') {
-      window.addEventListener('resize', this.resize.bind(this));
+      window.addEventListener('resize', this._boundResize);
     }
   }
   
@@ -288,6 +289,8 @@ export class BattleReplay {
   
   destroy() {
     this.stop();
-    window.removeEventListener('resize', this.resize.bind(this));
+    if (typeof window !== 'undefined' && this._boundResize) {
+      window.removeEventListener('resize', this._boundResize);
+    }
   }
 }

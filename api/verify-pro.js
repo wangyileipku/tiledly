@@ -42,15 +42,11 @@ async function runRedisCommand(commandArray) {
   }
 }
 
-export default async function handler(req, res) {
-  // Enable CORS
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+import { applyCors } from './_cors.js';
+import { createProToken } from './_token.js';
 
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
+export default async function handler(req, res) {
+  if (applyCors(req, res)) return;
 
   if (req.method !== 'GET') {
     res.setHeader('Allow', 'GET');
@@ -59,8 +55,8 @@ export default async function handler(req, res) {
 
   const deviceId = req.query?.deviceId;
 
-  if (!deviceId) {
-    return res.status(400).json({ error: 'Missing deviceId parameter' });
+  if (!deviceId || typeof deviceId !== 'string' || deviceId.length < 5 || deviceId.length > 64) {
+    return res.status(400).json({ error: 'Missing or invalid deviceId parameter' });
   }
 
   // Lookup PRO status in Redis
@@ -90,11 +86,16 @@ export default async function handler(req, res) {
     }
 
     // Active PRO member!
+    const plan = record.plan || 'monthly';
+    const expiryTimestamp = record.expiryTimestamp || null;
+    const token = createProToken(deviceId, plan, expiryTimestamp);
+
     return res.status(200).json({
       isPro: true,
-      plan: record.plan || 'monthly',
-      expiryTimestamp: record.expiryTimestamp || null,
+      plan,
+      expiryTimestamp,
       activatedAt: record.activatedAt || null,
+      token,
     });
   } catch (err) {
     console.error('Error parsing PRO record:', err.message);

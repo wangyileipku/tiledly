@@ -1,0 +1,9 @@
+# Tiledly robots.txt
+# https://tiledly.com
+
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /og-image.html
+
+Sitemap: https://tiledly.com/sitemap.xml

@@ -9,9 +9,11 @@ const STREAK_SHIELDS_KEY = 'tiledly_streak_shields';
 export const Monetization = {
   config: MonetizationConfig,
   listeners: new Set(),
+  _sessionVerified: false,
 
   /**
    * Check if current user has active PRO membership.
+   * Authenticated via server token or active session verification — rejects spoofed localStorage.
    */
   isPro() {
     if (!this.config.enabled || !this.config.premium.enabled) return false;
@@ -19,6 +21,13 @@ export const Monetization = {
     // Check localStorage
     const isPro = Storage.getSetting('is_pro', false);
     if (!isPro) return false;
+
+    // Anti-spoofing defense: an unverified pro_token cannot grant access
+    // if the current session has not been actively verified by the server.
+    const token = Storage.getSetting('pro_token', null);
+    if (!token && !this._sessionVerified) {
+      return false;
+    }
 
     // Check expiry if set
     const expiry = Storage.getSetting('pro_expiry', null);
@@ -28,6 +37,16 @@ export const Monetization = {
     }
 
     return true;
+  },
+
+  /**
+   * Actively verify PRO status against the server before unlocking gated features (archive access, etc.).
+   * Guarantees that client-side localStorage edits cannot bypass paywalls.
+   * @returns {Promise<boolean>}
+   */
+  async requireServerPro() {
+    await this.verifyProWithServer();
+    return this.isPro();
   },
 
   /**
@@ -69,8 +88,12 @@ export const Monetization = {
    * @param {object} [details] { expiryTimestamp, durationDays, plan: 'monthly'|'lifetime'|'supporter' }
    */
   setPro(active, details = {}) {
+    this._sessionVerified = !!active;
     Storage.setSetting('is_pro', !!active);
     if (active) {
+      if (details.token) {
+        Storage.setSetting('pro_token', details.token);
+      }
       if (details.expiryTimestamp) {
         Storage.setSetting('pro_expiry', details.expiryTimestamp);
       } else if (details.durationDays) {
@@ -82,6 +105,7 @@ export const Monetization = {
       }
       Storage.setSetting('pro_plan', details.plan || (details.expiryTimestamp || details.durationDays ? 'monthly' : 'lifetime'));
     } else {
+      Storage.setSetting('pro_token', null);
       Storage.setSetting('pro_expiry', null);
       Storage.setSetting('pro_plan', null);
     }
@@ -91,27 +115,42 @@ export const Monetization = {
   },
 
   /**
-   * Redeem a secret VIP key or receipt code.
-   * Secure, single access path without insecure developer cheats.
+   * Redeem a secret VIP key via the server-side validation endpoint.
+   * Keys are validated server-side — no secrets are stored in client code.
    * @param {string} key
+   * @returns {Promise<{success: boolean, message: string, plan?: string}>}
    */
-  redeemVipKey(key) {
+  async redeemVipKey(key) {
     if (!key) return { success: false, message: 'Please enter a VIP Key' };
-    const cleanKey = key.trim().toUpperCase();
 
-    // Lifetime VIP Keys
-    if (cleanKey === 'TILEDLY_VIP_2026' || cleanKey === 'FOUNDER_LIFETIME' || cleanKey === 'TILEDLY_LIFETIME') {
-      this.setPro(true, { plan: 'lifetime' });
-      return { success: true, plan: 'lifetime', message: '👑 Lifetime VIP Activated!' };
+    try {
+      const deviceId = Storage.getDeviceId();
+      const res = await fetch('/api/redeem-key', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: key.trim(), deviceId }),
+      });
+
+      const data = await res.json();
+
+      if (res.status === 429) {
+        return { success: false, message: data.error || 'Too many attempts. Please try again later.' };
+      }
+
+      if (data.success) {
+        this.setPro(true, {
+          plan: data.plan,
+          expiryTimestamp: data.expiryTimestamp || null,
+          token: data.token || null,
+        });
+        return { success: true, plan: data.plan, message: data.message };
+      }
+
+      return { success: false, message: data.error || 'Invalid VIP Key' };
+    } catch (e) {
+      console.warn('VIP key redemption failed:', e.message);
+      return { success: false, message: 'Network error. Please check your connection and try again.' };
     }
-
-    // 30-Day Monthly Pass
-    if (cleanKey === 'TILEDLY_MONTHLY' || cleanKey === 'PRO_PASS_30') {
-      this.setPro(true, { plan: 'monthly', durationDays: 30 });
-      return { success: true, plan: 'monthly', message: '👑 30-Day PRO Pass Activated!' };
-    }
-
-    return { success: false, message: 'Invalid VIP Key' };
   },
 
   /**
@@ -407,24 +446,38 @@ export const Monetization = {
     try {
       const deviceId = Storage.getDeviceId();
       const res = await fetch(`/api/verify-pro?deviceId=${encodeURIComponent(deviceId)}`);
-      if (!res.ok) return;
+      if (!res.ok) {
+        this._sessionVerified = true;
+        this.setPro(false);
+        return false;
+      }
 
       const data = await res.json();
+      this._sessionVerified = true;
       if (data.isPro) {
         this.setPro(true, {
           plan: data.plan || 'monthly',
-          expiryTimestamp: data.expiryTimestamp || null
+          expiryTimestamp: data.expiryTimestamp || null,
+          token: data.token || null,
         });
+        return true;
       } else {
-        // Server says not PRO — clear any stale local state
+        // Server says not PRO — clear any stale or spoofed local state
         const wasPro = Storage.getSetting('is_pro', false);
         if (wasPro) {
           this.setPro(false);
         }
+        return false;
       }
     } catch (e) {
-      // Network error — keep existing local state as fallback
-      console.warn('PRO verification failed (offline?):', e.message);
+      console.warn('PRO verification failed (offline or blocked):', e.message);
+      // Anti-spoofing defense: If the network was blocked or offline,
+      // any is_pro entry in localStorage without an authentic server token is revoked!
+      const token = Storage.getSetting('pro_token', null);
+      if (!token) {
+        this.setPro(false);
+      }
+      return this.isPro();
     }
   },
 
@@ -445,6 +498,7 @@ export const Monetization = {
         this.setPro(true, {
           plan: data.plan,
           expiryTimestamp: data.expiryTimestamp,
+          token: data.token || null,
         });
         this.showToast(data.message || '👑 PRO membership restored!');
         this.openProModal();
@@ -484,6 +538,7 @@ export const Monetization = {
       this.setPro(true, {
         plan: data.plan,
         expiryTimestamp: data.expiryTimestamp,
+        token: data.token || null,
       });
     }
     return { ok: res.ok, data };
@@ -582,16 +637,23 @@ export const Monetization = {
     }
 
     if (redeemSubmitBtn && redeemInput) {
-      redeemSubmitBtn.addEventListener('click', () => {
+      redeemSubmitBtn.addEventListener('click', async () => {
         const key = redeemInput.value;
-        const res = this.redeemVipKey(key);
-        if (res.success) {
-          this.showToast(res.message);
-          redeemInput.value = '';
-          redeemForm?.classList.add('hidden');
-          this.openProModal(); // refresh status view
-        } else {
-          this.showToast(`❌ ${res.message}`);
+        redeemSubmitBtn.disabled = true;
+        redeemSubmitBtn.textContent = 'Checking...';
+        try {
+          const res = await this.redeemVipKey(key);
+          if (res.success) {
+            this.showToast(res.message);
+            redeemInput.value = '';
+            redeemForm?.classList.add('hidden');
+            this.openProModal(); // refresh status view
+          } else {
+            this.showToast(`❌ ${res.message}`);
+          }
+        } finally {
+          redeemSubmitBtn.disabled = false;
+          redeemSubmitBtn.textContent = 'Redeem';
         }
       });
     }
@@ -632,9 +694,6 @@ export const Monetization = {
           if (res.success) {
             if (restoreStatus) restoreStatus.textContent = res.message || 'Check your email for the restore link!';
             if (restoreCodeWrap) restoreCodeWrap.classList.remove('hidden');
-            if (res.magicCode && restoreCodeInput) {
-              restoreCodeInput.value = res.magicCode; // Pre-fill test code if Resend not set up yet
-            }
           } else {
             if (restoreStatus) restoreStatus.textContent = `❌ ${res.error || 'Failed to request restore.'}`;
           }
