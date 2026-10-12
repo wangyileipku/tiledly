@@ -1590,6 +1590,87 @@ totalTests++;
   console.log('  ✓ Legal Terms Governing Law (Issue 12): Verified Delaware governing law, exclusive venue, and domain accuracy');
 }
 
+// 11h. Stripe Customer Portal Integration (Self-Serve Subscription Management & Cancellation)
+totalTests++;
+{
+  const { MonetizationConfig } = await import('./js/monetization/config.js');
+  const expectedPortalUrl = 'https://billing.stripe.com/p/login/bJe8wPevS4KlbsO99KfEk00';
+  if (MonetizationConfig.premium.customerPortalUrl !== expectedPortalUrl) {
+    throw new Error(`MonetizationConfig missing or invalid customerPortalUrl: ${MonetizationConfig.premium.customerPortalUrl}`);
+  }
+
+  const indexHtml = fs.readFileSync('./index.html', 'utf-8');
+  if (!indexHtml.includes(expectedPortalUrl)) {
+    throw new Error('index.html missing Stripe customer portal links');
+  }
+  if (!indexHtml.includes('pro-modal-portal-btn') || !indexHtml.includes('pro-modal-portal-link')) {
+    throw new Error('index.html missing portal action button or footer link in PRO modal');
+  }
+
+  const termsHtml = fs.readFileSync('./terms.html', 'utf-8');
+  if (!termsHtml.includes(expectedPortalUrl)) {
+    throw new Error('terms.html missing customer portal link under cancellation terms');
+  }
+
+  const aboutHtml = fs.readFileSync('./about.html', 'utf-8');
+  if (!aboutHtml.includes(expectedPortalUrl)) {
+    throw new Error('about.html missing customer portal link under PRO FAQ');
+  }
+
+  passedTests++;
+  console.log('  ✓ Stripe Customer Portal: Direct self-service cancellation & billing portal integrated across app & docs');
+}
+
+// 11i. Social Media Open Graph & X Cards Direct Non-Redirect Assets
+totalTests++;
+{
+  const indexHtml = fs.readFileSync('./index.html', 'utf-8');
+  if (!indexHtml.includes('content="https://www.tiledly.com/og-image.png"') ||
+      !indexHtml.includes('content="summary_large_image"')) {
+    throw new Error('index.html missing non-redirecting https://www.tiledly.com/og-image.png or summary_large_image card');
+  }
+
+  const { getShareText } = await import('./js/share.js');
+  const sampleResult = {
+    dayNumber: 9,
+    mode: { emoji: '⚡', name: 'Classic Speed' },
+    time: 25000,
+    accuracy: 100,
+    percentile: 1,
+    streak: 5
+  };
+  const shareText = getShareText(sampleResult);
+  if (!shareText.includes('https://www.tiledly.com')) {
+    throw new Error(`getShareText should use non-redirect canonical URL https://www.tiledly.com, got: ${shareText}`);
+  }
+
+  passedTests++;
+  console.log('  ✓ Social Media Previews & X Cards: Direct www.tiledly.com/og-image.png asset and card tags configured');
+}
+
+// 11j. Share Website Without Playing (Inviting Friends & Viral Reach)
+totalTests++;
+{
+  const { getGameInviteText } = await import('./js/share.js');
+  const inviteTextDefault = getGameInviteText();
+  if (!inviteTextDefault.includes('https://www.tiledly.com') || !inviteTextDefault.includes('Tiledly')) {
+    throw new Error(`Default invite text missing URL or title: ${inviteTextDefault}`);
+  }
+
+  const inviteTextWithMode = getGameInviteText({ emoji: '⚡', name: 'Classic Speed' }, 10);
+  if (!inviteTextWithMode.includes('#10') || !inviteTextWithMode.includes('Classic Speed')) {
+    throw new Error(`Mode-specific invite text missing challenge details: ${inviteTextWithMode}`);
+  }
+
+  const indexHtml = fs.readFileSync('./index.html', 'utf-8');
+  if (!indexHtml.includes('id="home-share-btn"') || !indexHtml.includes('id="home-share-icon-btn"') || !indexHtml.includes('id="home-footer-share-btn"')) {
+    throw new Error('index.html missing home screen, top bar, or footer share buttons');
+  }
+
+  passedTests++;
+  console.log('  ✓ Viral Sharing (Pre-gameplay): 1-tap friend challenge & share buttons live on home screen and footer');
+}
+
 console.log(`\n🎉 ALL ${passedTests}/${totalTests} TESTS PASSED!`);
 console.log(`Tiledly has 28 unique challenges, robust streak tracking, verified battle royale replay, tiered monetization, and full daily archive.`);
 

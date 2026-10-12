@@ -94,7 +94,7 @@ export async function generateShareCard(result) {
 }
 
 export function getShareText(result) {
-  const url = 'https://tiledly.com';
+  const url = 'https://www.tiledly.com';
 
   const lines = [
     `⚡ Tiledly #${result.dayNumber} — ${result.mode.emoji} ${result.mode.name}`,
@@ -103,6 +103,23 @@ export function getShareText(result) {
     `Play: ${url}`
   ];
   return lines.join('\n');
+}
+
+export function getGameInviteText(mode = null, dayNumber = null) {
+  const url = 'https://www.tiledly.com';
+  if (mode && dayNumber) {
+    return [
+      `⚡ Tiledly #${dayNumber} — ${mode.emoji} ${mode.name}`,
+      `One daily challenge. Tap as fast as you can. Race against the world.`,
+      `Can you beat today's challenge?`,
+      `Play: ${url}`
+    ].join('\n');
+  }
+  return [
+    `⚡ Tiledly — Daily Speed Challenge`,
+    `One daily challenge. Tap as fast as you can. Race against the world.`,
+    `Play: ${url}`
+  ].join('\n');
 }
 
 export async function shareResult(result) {
@@ -117,6 +134,36 @@ export async function shareResult(result) {
     }
   }
   
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch (e) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    return true;
+  }
+}
+
+export async function shareGame(mode = null, dayNumber = null) {
+  const text = getGameInviteText(mode, dayNumber);
+  const title = 'Tiledly — Daily Speed Challenge';
+  const url = 'https://www.tiledly.com';
+
+  if (navigator.share) {
+    try {
+      await navigator.share({ title, text, url });
+      return true;
+    } catch (e) {
+      // User cancelled or not supported, fall through
+    }
+  }
+
   try {
     await navigator.clipboard.writeText(text);
     return true;

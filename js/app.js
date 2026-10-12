@@ -3,7 +3,7 @@ import { Analytics } from './analytics.js';
 import { getTodayMode, getTodayChallenge, getModeInfo, getDailyNumber, ALL_MODES, getArchiveDays } from './daily.js';
 import { GameEngine } from './engine.js';
 import { getDailySeed, SeededRandom, formatTime, formatNumber, delay, getWeekOfYear } from './utils.js';
-import { generateShareCard, shareResult } from './share.js';
+import { generateShareCard, shareResult, shareGame } from './share.js';
 import { BattleReplay } from './replay.js';
 import { Monetization } from './monetization/monetization.js';
 import { Consent } from './consent.js';
@@ -134,6 +134,32 @@ function setupEventListeners() {
   });
   document.getElementById('home-practice-btn').addEventListener('click', () => promptBriefing(true));
   document.getElementById('home-archive-btn')?.addEventListener('click', () => openArchiveModal());
+
+  // Share Tiledly without having to play a game
+  const handleShareGame = async () => {
+    Analytics.trackShareClicked();
+    const modeInfo = getModeInfo();
+    const todayNum = getDailyNumber();
+    await shareGame(modeInfo, todayNum);
+    const toast = document.getElementById('share-toast');
+    if (toast) {
+      toast.textContent = '📋 Copied game invite to clipboard!';
+      toast.classList.remove('hidden');
+      void toast.offsetWidth;
+      toast.classList.add('show');
+      setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.classList.add('hidden'), 350);
+      }, 2500);
+    }
+  };
+
+  document.getElementById('home-share-btn')?.addEventListener('click', handleShareGame);
+  document.getElementById('home-share-icon-btn')?.addEventListener('click', handleShareGame);
+  document.getElementById('home-footer-share-btn')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    handleShareGame();
+  });
   
   // Daily Archive modal
   const archiveModal = document.getElementById('modal-archive');

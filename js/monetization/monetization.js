@@ -335,6 +335,13 @@ export const Monetization = {
           ? '🌟 <strong>Lifetime VIP Pass</strong> active with all perks unlocked.'
           : `⏳ <strong>Monthly Supporter Pass</strong> active. Renews/expires on ${details.expiryFormatted} (${details.daysRemaining} days left).`;
       }
+      const portalBtn = document.getElementById('pro-modal-portal-btn');
+      if (portalBtn) {
+        portalBtn.href = this.config.premium.customerPortalUrl || 'https://billing.stripe.com/p/login/bJe8wPevS4KlbsO99KfEk00';
+        portalBtn.textContent = details.plan === 'lifetime'
+          ? '⚙️ View Invoices & Receipts'
+          : '⚙️ Manage Subscription (Cancel / Billing)';
+      }
     } else {
       if (proBadgeEl) proBadgeEl.textContent = `from ${this.config.premium.priceDisplay}`;
       // Show plan buttons, hide active status

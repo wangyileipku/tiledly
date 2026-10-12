@@ -42,16 +42,21 @@
     <meta name="description" content="One daily challenge. Tap as fast as you can. Race against the world in Tiledly's speed puzzles.">
     <meta property="og:title" content="Tiledly — Daily Speed Challenge">
     <meta property="og:description" content="One daily challenge. Tap as fast as you can. Race against the world.">
-    <meta property="og:image" content="https://tiledly.com/og-image.png">
+    <meta property="og:image" content="https://www.tiledly.com/og-image.png">
+    <meta property="og:image:secure_url" content="https://www.tiledly.com/og-image.png">
+    <meta property="og:image:type" content="image/png">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
-    <meta property="og:url" content="https://tiledly.com">
+    <meta property="og:image:alt" content="Tiledly — Daily Speed Challenge">
+    <meta property="og:url" content="https://www.tiledly.com">
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="Tiledly">
     <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:site" content="@tiledly">
     <meta name="twitter:title" content="Tiledly — Daily Speed Challenge">
     <meta name="twitter:description" content="One daily challenge. Tap as fast as you can. Race against the world.">
-    <meta name="twitter:image" content="https://tiledly.com/og-image.png">
+    <meta name="twitter:image" content="https://www.tiledly.com/og-image.png">
+    <meta name="twitter:image:alt" content="Tiledly — Daily Speed Challenge">
     <meta name="theme-color" content="#0a0a1a">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -75,7 +80,10 @@
         <div id="screen-home" class="screen active">
             <div class="home-top-bar flex-between w-100 max-w-400 mb-2">
                 <div class="logo"><span class="logo-icon">⚡</span> Tiledly</div>
-                <button id="home-pro-pill" class="btn-pro-pill">⚡ Get PRO</button>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <button id="home-share-icon-btn" class="btn-ghost" title="Share Tiledly with friends" aria-label="Share Tiledly" style="padding: 6px 12px; font-size: 13px; margin-bottom: 0;">📢 Share</button>
+                    <button id="home-pro-pill" class="btn-pro-pill">⚡ Get PRO</button>
+                </div>
             </div>
             <div id="home-mode-emoji">⚡</div>
             <h2 id="home-mode-name">Classic Speed</h2>
@@ -89,12 +97,15 @@
                 <button id="home-view-result-btn" class="btn-primary">View Result</button>
             </div>
             
+            <button id="home-share-btn" class="btn-ghost mb-1">🤝 Challenge Friends</button>
             <button id="home-practice-btn" class="btn-ghost mb-1">🎯 Practice Mode</button>
             <button id="home-archive-btn" class="btn-ghost mb-1">📅 Daily Archive</button>
             <button id="home-install-app-btn" class="btn-ghost mb-2 hidden">📲 Install App</button>
             
             <footer class="home-footer text-muted flex-center" style="gap: 10px; font-size: 12px; flex-wrap: wrap;">
                 <button id="home-how-to-play-btn" class="btn-link text-muted">How to Play</button>
+                <span>•</span>
+                <button id="home-footer-share-btn" class="btn-link text-muted">Share</button>
                 <span>•</span>
                 <a href="about.html" class="btn-link text-muted">About & FAQ</a>
                 <span>•</span>
@@ -292,10 +303,12 @@
 
                 <div id="pro-modal-active-status" class="hidden mb-2">
                     <button id="pro-modal-checkout-btn" class="btn-pro-primary w-100 btn-large btn-disabled" disabled>✨ You are an Active PRO Member!</button>
+                    <a id="pro-modal-portal-btn" href="https://billing.stripe.com/p/login/bJe8wPevS4KlbsO99KfEk00" target="_blank" rel="noopener noreferrer" class="btn-secondary w-100 mt-2 text-center" style="display: block; text-decoration: none; padding: 10px; font-size: 13px; box-sizing: border-box;">⚙️ Manage Subscription (Cancel / Billing)</a>
                 </div>
                 
-                <div class="flex-between text-muted" style="font-size: 11px;">
+                <div class="flex-between text-muted" style="font-size: 11px; flex-wrap: wrap; gap: 8px;">
                     <button id="pro-modal-show-restore-btn" class="btn-link text-muted" style="font-size: 11px; padding: 0;">Already PRO? Restore</button>
+                    <a id="pro-modal-portal-link" href="https://billing.stripe.com/p/login/bJe8wPevS4KlbsO99KfEk00" target="_blank" rel="noopener noreferrer" class="btn-link text-muted" style="font-size: 11px; padding: 0; text-decoration: underline;">Manage Billing / Cancel</a>
                     <button id="pro-modal-show-redeem-btn" class="btn-link text-muted" style="font-size: 11px; padding: 0;">Redeem VIP Key</button>
                 </div>
 

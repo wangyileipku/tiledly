@@ -33,6 +33,7 @@ export const MonetizationConfig = {
     // Leave empty to disable that plan's checkout button until configured
     monthlyCheckoutUrl: 'https://buy.stripe.com/bJe8wPevS4KlbsO99KfEk00',
     lifetimeCheckoutUrl: 'https://buy.stripe.com/3cI6oHevS2CdaoK5XyfEk01',
+    customerPortalUrl: 'https://billing.stripe.com/p/login/bJe8wPevS4KlbsO99KfEk00',
 
     // Display pricing
     priceDisplay: '$2.99 / mo',
