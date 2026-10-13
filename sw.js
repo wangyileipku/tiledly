@@ -1,4 +1,4 @@
-const CACHE_NAME = 'tiledly-v2';
+const CACHE_NAME = 'tiledly-v3';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
