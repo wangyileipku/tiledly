@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <meta name="description" content="One daily challenge. Tap as fast as you can. Race against the world in Tiledly's speed puzzles.">
+    <title>Tiledly — Daily Speed Challenge</title>
+    <!-- Favicon emoji via SVG data URI -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22https://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚡</text></svg>">
+    <link rel="stylesheet" href="css/style.css">
+
+    <!-- Poki SDK v2 (Official CDN script required by Poki) -->
+    <script src="https://game-cdn.poki.com/scripts/v2/poki-sdk.js"></script>
+</head>
+<body>
+    <div id="app">
+        <!-- Screen 1: Home -->
+        <div id="screen-home" class="screen active">
+            <div class="home-top-bar flex-between w-100 max-w-400 mb-2">
+                <div class="logo"><span class="logo-icon">⚡</span> Tiledly</div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <button id="home-share-icon-btn" class="btn-ghost" title="Share Tiledly with friends" aria-label="Share Tiledly" style="padding: 6px 12px; font-size: 13px; margin-bottom: 0;">📢 Share</button>
+                    <!-- home-pro-pill is hidden on platform builds by js/monetization.js -->
+                    <button id="home-pro-pill" class="btn-pro-pill hidden" style="display: none;">⚡ Get PRO</button>
+                </div>
+            </div>
+            <div id="home-mode-emoji">⚡</div>
+            <h2 id="home-mode-name">Classic Speed</h2>
+            <p id="home-mode-desc">Tap 1 to 25 as fast as you can.</p>
+            <div id="home-streak">🔥 0 Day Streak</div>
+            
+            <button id="home-play-btn" class="btn-primary btn-large">Play Today's Challenge</button>
+            
+            <div id="home-already-played" class="already-played hidden">
+                <p>You've already played today!</p>
+                <button id="home-view-result-btn" class="btn-primary">View Result</button>
+            </div>
+            
+            <button id="home-share-btn" class="btn-ghost mb-1">🤝 Challenge Friends</button>
+            <button id="home-practice-btn" class="btn-ghost mb-1">🎯 Practice Mode</button>
+            <button id="home-archive-btn" class="btn-ghost mb-1">📅 Daily Archive</button>
+            
+            <footer class="home-footer text-muted flex-center" style="gap: 10px; font-size: 12px; flex-wrap: wrap;">
+                <button id="home-how-to-play-btn" class="btn-link text-muted">How to Play</button>
+                <span>•</span>
+                <button id="home-footer-share-btn" class="btn-link text-muted">Share</button>
+            </footer>
+        </div>
+
+        <!-- Screen 2: Countdown -->
+        <div id="screen-countdown" class="screen flex-center flex-column">
+            <div id="countdown-number" class="countdown-number">3</div>
+            <div id="countdown-mode" class="text-accent mt-2">Classic Speed</div>
+        </div>
+
+        <!-- Screen 3: Memorize -->
+        <div id="screen-memorize" class="screen flex-column">
+            <div class="memorize-header flex-center flex-column mb-2 mt-3">
+                <h2 class="text-warning mb-1">Memorize the grid!</h2>
+                <div id="memorize-timer" class="timer text-warning">5.00s</div>
+            </div>
+            <div id="memorize-grid" class="grid-container"></div>
+        </div>
+
+        <!-- Screen 4: Game -->
+        <div id="screen-game" class="screen flex-column">
+            <div class="game-header p-2">
+                <div id="game-mode-info">⚡ Classic</div>
+                <div id="game-timer" class="timer">0.00s</div>
+            </div>
+            
+            <div id="game-target" class="game-target hidden"></div>
+            
+            <div class="flex-center flex-1 w-100">
+                <div id="game-grid" class="grid-container"></div>
+            </div>
+            
+            <div class="flex-center w-100 mb-1">
+                <button id="game-peek-btn" class="btn-peek hidden">👁 Peek (-2s penalty)</button>
+            </div>
+
+            <div class="game-footer p-2 text-muted">
+                <div id="game-progress">0/25</div>
+                <div id="game-mistakes">❌ 0</div>
+            </div>
+        </div>
+
+        <!-- Screen 5: Result -->
+        <div id="screen-result" class="screen flex-column flex-center p-2">
+            <div class="result-header mb-2 flex-center flex-column">
+                <div class="result-trophy mb-1" style="font-size: 48px;">🏆</div>
+                <h2>Challenge Complete!</h2>
+            </div>
+            
+            <div class="result-stats mb-3 w-100 max-w-400">
+                <div class="stat-card">
+                    <div class="stat-value text-accent" id="result-time">0.00s</div>
+                    <div class="stat-label">Time</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value text-success" id="result-score">0</div>
+                    <div class="stat-label">Score</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value text-warning" id="result-accuracy">100%</div>
+                    <div class="stat-label">Accuracy</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value text-error" id="result-mistakes">0</div>
+                    <div class="stat-label">Mistakes</div>
+                </div>
+            </div>
+            
+            <!-- Global Leaderboard / Daily Rank -->
+            <div class="result-rank-card mb-3 w-100 max-w-400">
+                <div class="flex-between mb-1">
+                    <span class="text-muted" style="font-size: 13px;">Daily Global Rank</span>
+                    <span class="text-accent" id="result-rank-percentile" style="font-size: 13px; font-weight: bold;">Top 10%</span>
+                </div>
+                <div class="result-rank-val mb-1" id="result-rank-text">#1,420 / 14,200</div>
+                <div class="result-rank-bar">
+                    <div class="result-rank-fill" id="result-rank-fill" style="width: 85%;"></div>
+                </div>
+            </div>
+            
+            <div id="result-streak-display" class="mb-3">🔥 0 Day Streak</div>
+            
+            <canvas id="result-share-canvas" width="600" height="340" style="display: none;"></canvas>
+            
+            <div class="result-actions">
+                <button id="result-share-btn" class="btn-primary">📋 Share Result</button>
+                <button id="result-replay-btn" class="btn-secondary">🎬 Watch Battle Replay</button>
+                <button id="result-practice-btn" class="btn-secondary">🎯 Play Practice Round</button>
+                <button id="result-rewarded-shield-btn" class="btn-secondary hidden" style="border-color: #ffcc00; color: #ffcc00;">🛡️ Watch Ad to Earn Streak Shield</button>
+                <button id="result-home-btn" class="btn-ghost">🏠 Back to Home</button>
+            </div>
+            
+            <!-- Result Screen Ad Slot (Hidden on Poki since SDK controls breaks) -->
+            <div id="result-ad-slot" class="ad-slot-container w-100 max-w-400 mt-2" style="display: none;"></div>
+        </div>
+
+        <!-- Screen 6: Replay -->
+        <div id="screen-replay" class="screen flex-column flex-center p-2">
+            <div class="replay-header mb-2 text-center">
+                <h2>⚔️ Battle Royale</h2>
+                <div id="replay-status" class="text-muted mt-1">92 players remaining...</div>
+            </div>
+            
+            <canvas id="replay-canvas" class="mb-3 w-100 max-w-400" style="max-height: 400px;"></canvas>
+            
+            <button id="replay-back-btn" class="btn-secondary max-w-400 w-100">← Back to Results</button>
+        </div>
+        
+        <!-- Modal: Pre-Game Briefing -->
+        <div id="modal-briefing" class="modal-overlay hidden flex-center" role="dialog" aria-modal="true" aria-labelledby="briefing-title">
+            <div class="modal-card p-3 max-w-400">
+                <div class="flex-between mb-2">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span id="briefing-emoji" style="font-size: 32px;" aria-hidden="true">⚡</span>
+                        <div>
+                            <h3 id="briefing-title" class="text-accent" style="margin: 0; font-size: 20px;">Daily Challenge</h3>
+                            <span id="briefing-badge" style="font-size: 11px; color: #ffcc00; text-transform: uppercase; font-weight: bold; letter-spacing: 0.5px;">Daily Event</span>
+                        </div>
+                    </div>
+                    <button id="briefing-close-btn" class="btn-icon" aria-label="Close challenge briefing">✕</button>
+                </div>
+                <p id="briefing-desc" class="text-white mb-2" style="font-size: 14px; font-weight: 500;"></p>
+                <div id="briefing-rules" class="modal-body text-muted mb-3" style="font-size: 13px; line-height: 1.6; background: rgba(255,255,255,0.04); padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08);">
+                    <!-- Dynamic rules checklist -->
+                </div>
+                <button id="briefing-start-btn" class="btn-primary w-100 btn-large">🚀 Start Challenge!</button>
+            </div>
+        </div>
+
+        <!-- Modal: How to Play -->
+        <div id="modal-how-to-play" class="modal-overlay hidden flex-center" role="dialog" aria-modal="true" aria-labelledby="how-to-play-title">
+            <div class="modal-card p-3 max-w-400">
+                <div class="flex-between mb-2">
+                    <h3 id="how-to-play-title" class="text-accent">⚡ How to Play</h3>
+                    <button id="modal-close-btn" class="btn-icon" aria-label="Close how to play dialog">✕</button>
+                </div>
+                <div class="modal-body text-muted mb-3" style="font-size: 14px; line-height: 1.6; max-height: 60vh; overflow-y: auto;">
+                    <p class="mb-2"><strong class="text-white">One challenge per day.</strong> Everyone worldwide plays the exact same grid.</p>
+                    <p class="mb-1"><strong class="text-accent">Mon 🧮 Sum Hunt:</strong> Tap pairs adding up to target.</p>
+                    <p class="mb-1"><strong class="text-accent">Tue 🔢 Number Rush:</strong> Ascending, descending, or step sequence.</p>
+                    <p class="mb-1"><strong class="text-accent">Wed 🎨 Color Cascade:</strong> Stroop test, matching colors and shapes.</p>
+                    <p class="mb-1"><strong class="text-accent">Thu 🧠 Memory Grid:</strong> Memorize the board, then recall by memory.</p>
+                    <p class="mb-1"><strong class="text-accent">Fri 💣 Minefield:</strong> Clear safe tiles, dodge hidden mines.</p>
+                    <p class="mb-1"><strong class="text-accent">Sat ⚡ Math Blitz:</strong> Mental math sprint with fast operations.</p>
+                    <p class="mb-3"><strong class="text-accent">Sun 🔤 Alpha Hunt:</strong> Alphabetical letters & word hunts.</p>
+                    <p class="text-white">Speed & accuracy define your score. Race the world every single day!</p>
+                </div>
+                <button id="modal-got-it-btn" class="btn-primary w-100">Got it!</button>
+            </div>
+        </div>
+
+        <!-- Modal: Daily Archive -->
+        <div id="modal-archive" class="modal-overlay hidden flex-center" role="dialog" aria-modal="true" aria-labelledby="archive-modal-title">
+            <div class="modal-card p-3 max-w-400" style="max-height: 82vh; display: flex; flex-direction: column;">
+                <div class="flex-between mb-2">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span style="font-size: 28px;" aria-hidden="true">📅</span>
+                        <div>
+                            <h3 id="archive-modal-title" class="text-accent" style="margin: 0; font-size: 20px;">Daily Archive</h3>
+                            <span class="text-muted" style="font-size: 11px;">Replay past daily challenges</span>
+                        </div>
+                    </div>
+                    <button id="archive-close-btn" class="btn-icon" aria-label="Close daily archive dialog">✕</button>
+                </div>
+                
+                <div id="archive-list" class="archive-list" style="overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 10px; padding: 4px 2px;">
+                    <!-- Populated dynamically by app.js -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Toast Notification -->
+        <div id="share-toast" class="toast hidden flex-center">
+            Copied to clipboard!
+        </div>
+    </div>
+    <script type="module" src="js/app.js"></script>
+</body>
+</html>

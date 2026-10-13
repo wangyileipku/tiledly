@@ -2,3 +2,8 @@
 node_modules/
 .vscode/
 .idea/
+
+# Distribution builds & packaging outputs (upload these directly to CrazyGames / Poki portals)
+dist/
+*.zip
+*.tar.gz

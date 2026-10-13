@@ -7,6 +7,8 @@ import { generateShareCard, shareResult, shareGame } from './share.js';
 import { BattleReplay } from './replay.js';
 import { Monetization } from './monetization/monetization.js';
 import { Consent } from './consent.js';
+import { AdAdapter } from './ads/ad-adapter.js';
+import { IS_STANDALONE, IS_CRAZYGAMES, IS_POKI } from './platform.js';
 
 let currentEngine = null;
 let currentMode = null;
@@ -40,10 +42,12 @@ async function init() {
   }
   
   showScreen('screen-home');
+  AdAdapter.init();
   Consent.init();
   Analytics.init();
   Analytics.trackPageView();
   Monetization.init();
+  AdAdapter.loadingFinished();
 }
 
 function getBriefingRules(mode, challenge) {
@@ -117,8 +121,11 @@ function promptBriefing(isPractice = false, customConfig = null) {
   const newStartBtn = startBtn.cloneNode(true);
   startBtn.parentNode.replaceChild(newStartBtn, startBtn);
 
-  newStartBtn.addEventListener('click', () => {
+  newStartBtn.addEventListener('click', async () => {
     modal.classList.add('hidden');
+    if (!isPractice) {
+      await AdAdapter.showMidgame();
+    }
     startCountdown(isPractice);
   });
 
@@ -270,6 +277,37 @@ function setupEventListeners() {
     promptBriefing(true);
   });
 
+  document.getElementById('result-rewarded-shield-btn')?.addEventListener('click', async () => {
+    const shieldBtn = document.getElementById('result-rewarded-shield-btn');
+    if (shieldBtn) shieldBtn.disabled = true;
+    try {
+      const rewarded = await AdAdapter.showRewarded();
+      if (rewarded) {
+        Monetization.grantStreakShield(1);
+        if (shieldBtn) {
+          shieldBtn.textContent = '✅ Streak Shield Granted!';
+          shieldBtn.style.borderColor = '#4cd964';
+          shieldBtn.style.color = '#4cd964';
+        }
+        const toast = document.getElementById('share-toast');
+        if (toast) {
+          toast.textContent = '🛡️ Streak Shield awarded! Streak protected.';
+          toast.classList.remove('hidden');
+          void toast.offsetWidth;
+          toast.classList.add('show');
+          setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => toast.classList.add('hidden'), 350);
+          }, 3000);
+        }
+      } else {
+        if (shieldBtn) shieldBtn.disabled = false;
+      }
+    } catch (_) {
+      if (shieldBtn) shieldBtn.disabled = false;
+    }
+  });
+
   document.getElementById('result-home-btn')?.addEventListener('click', () => {
     init();
   });
@@ -306,7 +344,9 @@ function openArchiveModal() {
 
       const actionBtn = (isPro || day.isToday)
         ? `<button class="btn-archive-play" data-day-index="${idx}">▶ Play</button>`
-        : `<button class="btn-archive-lock" data-day-index="${idx}">🔒 PRO</button>`;
+        : (IS_STANDALONE
+            ? `<button class="btn-archive-lock" data-day-index="${idx}">🔒 PRO</button>`
+            : `<button class="btn-archive-lock" data-day-index="${idx}" disabled style="opacity: 0.6; cursor: default;">🔒 Daily Only</button>`);
 
       return `
         <div class="archive-card">
@@ -335,6 +375,7 @@ function openArchiveModal() {
 
     listEl.querySelectorAll('.btn-archive-lock').forEach(btn => {
       btn.addEventListener('click', () => {
+        if (!IS_STANDALONE) return;
         closeArchiveModal();
         Monetization.openProModal();
       });
@@ -511,6 +552,7 @@ async function startCountdown(isPractice = false) {
   
   currentEngine.onCellTap((index, cellData) => handleCellTap(index, cellData, isPractice));
   currentEngine.startTimer();
+  AdAdapter.gameplayStart();
   Analytics.trackGameStart(currentMode);
 }
 
@@ -603,6 +645,7 @@ function handleCellTap(index, cellData, isPractice) {
 
 async function endGame(isPractice) {
   currentEngine.stopTimer();
+  AdAdapter.gameplayStop();
   const elapsedMs = currentEngine.getElapsedTime();
   const stats = currentMode.getStats(currentGameState, elapsedMs);
   
@@ -612,7 +655,7 @@ async function endGame(isPractice) {
   let liveTotalPlayers = defaultTotal;
   let percentile = Math.max(1, Math.round((rankNumber / defaultTotal) * 100));
 
-  if (!isPractice) {
+  if (!isPractice && !IS_POKI) {
     try {
       const todaySeedStr = String(getDailySeed());
       const response = await fetch('/api/score', {
@@ -690,6 +733,30 @@ function showResult(result) {
   
   // Render ad slot (or collapse if PRO)
   Monetization.renderAdSlot('result-ad-slot', 'result');
+
+  // Rewarded Streak Shield for platform builds (CrazyGames / Poki)
+  const rewardedShieldBtn = document.getElementById('result-rewarded-shield-btn');
+  if (rewardedShieldBtn) {
+    if (!IS_STANDALONE && !Monetization.isPro()) {
+      rewardedShieldBtn.classList.remove('hidden');
+      rewardedShieldBtn.disabled = false;
+      rewardedShieldBtn.textContent = '🛡️ Watch Ad to Earn Streak Shield';
+      rewardedShieldBtn.style.borderColor = '#ffcc00';
+      rewardedShieldBtn.style.color = '#ffcc00';
+    } else {
+      rewardedShieldBtn.classList.add('hidden');
+    }
+  }
+
+  // Phase 6: Cross-promotion notice (Permitted on CrazyGames; strictly omitted on Poki)
+  const platformPromoEl = document.getElementById('result-platform-promo');
+  if (platformPromoEl) {
+    if (IS_CRAZYGAMES) {
+      platformPromoEl.classList.remove('hidden');
+    } else {
+      platformPromoEl.classList.add('hidden');
+    }
+  }
   
   generateShareCard(result);
   

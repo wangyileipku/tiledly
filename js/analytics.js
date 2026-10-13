@@ -1,4 +1,5 @@
 import { Storage } from './storage.js';
+import { IS_POKI } from './platform.js';
 
 export const Analytics = {
   config: {
@@ -25,6 +26,9 @@ export const Analytics = {
   },
 
   init() {
+    // Poki strictly forbids external analytics scripts & network tracking
+    if (IS_POKI) return;
+
     const hasConsent = this.hasConsent();
 
     if (this.config.ga4.enabled) {
@@ -100,6 +104,7 @@ export const Analytics = {
   },
 
   trackEvent(eventName, params = {}) {
+    if (IS_POKI) return;
     // Check window.gtag (either loaded via config or embedded tag in HTML)
     if (typeof window.gtag === 'function') {
       window.gtag('event', eventName, params);
@@ -153,6 +158,7 @@ export const Analytics = {
   },
 
   trackPageView() {
+    if (IS_POKI) return;
     if (typeof window.gtag === 'function') {
       window.gtag('event', 'page_view');
     }

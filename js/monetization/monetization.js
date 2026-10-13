@@ -1,6 +1,7 @@
 import { MonetizationConfig } from './config.js';
 import { Storage } from '../storage.js';
 import { Analytics } from '../analytics.js';
+import { IS_STANDALONE, IS_POKI } from '../platform.js';
 
 const PRO_STORAGE_KEY = 'tiledly_is_pro';
 const PRO_EXPIRY_KEY = 'tiledly_pro_expiry';
@@ -217,6 +218,13 @@ export const Monetization = {
     const el = typeof container === 'string' ? document.getElementById(container) : container;
     if (!el) return;
 
+    // Platform builds (CrazyGames / Poki) handle ads exclusively via their own SDK
+    if (!IS_STANDALONE) {
+      el.style.display = 'none';
+      el.innerHTML = '';
+      return;
+    }
+
     // If user is PRO or ads disabled, hide ad slot completely
     if (this.isPro() || !this.config.enabled || !this.config.ads.enabled) {
       el.style.display = 'none';
@@ -294,6 +302,7 @@ export const Monetization = {
    */
   openProModal() {
     if (typeof document === 'undefined') return;
+    if (!IS_STANDALONE) return; // PRO / Stripe purchase disabled on platform builds
     const modal = document.getElementById('modal-pro');
     if (!modal) return;
 
@@ -450,6 +459,11 @@ export const Monetization = {
    * The server checks Redis where the Stripe webhook stored the payment confirmation.
    */
   async verifyProWithServer() {
+    if (IS_POKI) {
+      // Poki blocks external API requests completely
+      this._sessionVerified = true;
+      return false;
+    }
     try {
       const deviceId = Storage.getDeviceId();
       const res = await fetch(`/api/verify-pro?deviceId=${encodeURIComponent(deviceId)}`);
@@ -577,10 +591,14 @@ export const Monetization = {
     // Home screen PRO button / pill
     const proPill = document.getElementById('home-pro-pill');
     if (proPill) {
-      if (isPro) {
+      if (!IS_STANDALONE) {
+        proPill.style.display = 'none';
+      } else if (isPro) {
+        proPill.style.display = '';
         proPill.innerHTML = '👑 PRO Member';
         proPill.classList.add('is-pro');
       } else {
+        proPill.style.display = '';
         proPill.innerHTML = '⚡ Get PRO';
         proPill.classList.remove('is-pro');
       }
