@@ -39,18 +39,20 @@ export const AdAdapter = {
 
   /**
    * Signal that active gameplay has begun (round start, unpause).
-   * Required by Poki; no-op on all other platforms.
+   * Forwarded to Poki and CrazyGames.
    */
   gameplayStart() {
-    if (IS_POKI) PokiAdapter.gameplayStart();
+    if (IS_CRAZYGAMES) CrazyGamesAdapter.gameplayStart();
+    if (IS_POKI)       PokiAdapter.gameplayStart();
   },
 
   /**
    * Signal that active gameplay has stopped (round end, pause, back to menu).
-   * Required by Poki; no-op on all other platforms.
+   * Forwarded to Poki and CrazyGames.
    */
   gameplayStop() {
-    if (IS_POKI) PokiAdapter.gameplayStop();
+    if (IS_CRAZYGAMES) CrazyGamesAdapter.gameplayStop();
+    if (IS_POKI)       PokiAdapter.gameplayStop();
   },
 
   /**
