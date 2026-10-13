@@ -655,7 +655,7 @@ async function endGame(isPractice) {
   let liveTotalPlayers = defaultTotal;
   let percentile = Math.max(1, Math.round((rankNumber / defaultTotal) * 100));
 
-  if (!isPractice && !IS_POKI) {
+  if (!isPractice && IS_STANDALONE) {
     try {
       const todaySeedStr = String(getDailySeed());
       const response = await fetch('/api/score', {

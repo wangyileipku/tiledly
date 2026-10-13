@@ -10,7 +10,7 @@ export const SumHuntMode = {
     const variantIndex = (weekNum - 1) % 4;
     const variants = [
       { name: 'Sum Hunt: Two-Digit Clashes', description: 'Find pairs of 2-digit numbers that add up to the target!' },
-      { name: 'Sum Hunt: Trio Sprint', description: 'Find 3 tiles that add up to the target sum!' },
+      { name: 'Sum Hunt: Century Sprint', description: 'Find pairs that add up to 100!' },
       { name: 'Sum Hunt: Escalating Targets', description: 'Pairs add to escalating targets: 20 → 40 → 60 → 80!' },
       { name: 'Sum Hunt: Difference Hunt', description: 'Find pairs of numbers with the target difference!' }
     ];
@@ -28,17 +28,23 @@ export const SumHuntMode = {
     const variantInfo = this.getVariantInfo(weekNum);
 
     if (variantIndex === 1) {
-      // Trio Sprint (3 numbers add up to target)
-      const targetSum = rng.nextInt(25, 45);
-      const items = [];
-      for (let i = 0; i < 8; i++) {
-        const a = rng.nextInt(2, Math.floor(targetSum / 2) - 1);
-        const maxB = targetSum - a - 2;
-        const b = rng.nextInt(2, maxB);
-        const c = targetSum - a - b;
-        items.push({ val: a, trioId: i }, { val: b, trioId: i }, { val: c, trioId: i });
+      // Century Sprint (Pairs that add up to 100)
+      const targetSum = 100;
+      const numbers = [];
+      const used = new Set();
+      for (let i = 0; i < 12; i++) {
+        let a, b;
+        let attempts = 0;
+        do {
+          a = rng.nextInt(5, 95);
+          b = targetSum - a;
+          attempts++;
+        } while ((used.has(a) || used.has(b) || a === b) && attempts < 100);
+        used.add(a);
+        used.add(b);
+        numbers.push(a, b);
       }
-      const shuffled = rng.shuffle(items);
+      const shuffled = rng.shuffle(numbers);
       const cells = [];
       let numIdx = 0;
       for (let i = 0; i < 25; i++) {
@@ -50,12 +56,11 @@ export const SumHuntMode = {
             classes: ['target-cell', 'disabled']
           });
         } else {
-          const item = shuffled[numIdx++];
+          const val = shuffled[numIdx++];
           cells.push({
             id: i,
-            display: String(item.val),
-            value: item.val,
-            trioId: item.trioId
+            display: String(val),
+            value: val
           });
         }
       }
@@ -64,7 +69,7 @@ export const SumHuntMode = {
         variantName: variantInfo.name,
         targetSum,
         grid: { rows: 5, cols: 5, cells },
-        totalTrios: 8
+        totalPairs: 12
       };
     } else if (variantIndex === 2) {
       // Escalating Targets: 20, 40, 60, 80 (3 pairs each)
@@ -180,20 +185,7 @@ export const SumHuntMode = {
   },
 
   createGameState(challenge) {
-    if (challenge.variantIndex === 1) {
-      // Trio Sprint state
-      return {
-        variantIndex: 1,
-        targetSum: challenge.targetSum,
-        cells: challenge.grid.cells,
-        selectedIndices: [],
-        clearedTrios: 0,
-        totalTrios: challenge.totalTrios,
-        mistakes: 0,
-        clearedIndices: new Set(),
-        taps: []
-      };
-    } else if (challenge.variantIndex === 2) {
+    if (challenge.variantIndex === 2) {
       // Escalating state
       return {
         variantIndex: 2,
@@ -223,9 +215,9 @@ export const SumHuntMode = {
       };
     }
 
-    // Two-digit clashes state
+    // Two-digit clashes (0) and Century Sprint (1) state
     return {
-      variantIndex: 0,
+      variantIndex: challenge.variantIndex,
       targetSum: challenge.targetSum,
       cells: challenge.grid.cells,
       selectedIndex: null,
@@ -242,52 +234,7 @@ export const SumHuntMode = {
       return { valid: false };
     }
 
-    // Trio Sprint Handling
-    if (gameState.variantIndex === 1) {
-      const existingPos = gameState.selectedIndices.indexOf(cellIndex);
-      if (existingPos !== -1) {
-        // Deselect
-        gameState.selectedIndices.splice(existingPos, 1);
-        return { valid: true, action: 'deselect', index: cellIndex };
-      }
-
-      gameState.selectedIndices.push(cellIndex);
-
-      if (gameState.selectedIndices.length < 3) {
-        return { valid: true, action: 'select', index: cellIndex };
-      }
-
-      // 3 items selected! Evaluate sum
-      const [i1, i2, i3] = gameState.selectedIndices;
-      const v1 = gameState.cells[i1].value;
-      const v2 = gameState.cells[i2].value;
-      const v3 = gameState.cells[i3].value;
-      gameState.selectedIndices = [];
-
-      if (v1 + v2 + v3 === gameState.targetSum) {
-        gameState.clearedIndices.add(i1);
-        gameState.clearedIndices.add(i2);
-        gameState.clearedIndices.add(i3);
-        gameState.clearedTrios++;
-        gameState.taps.push({ index: cellIndex, time: elapsedMs });
-
-        return {
-          valid: true,
-          action: 'correct',
-          indices: [i1, i2, i3],
-          isComplete: gameState.clearedTrios === gameState.totalTrios
-        };
-      } else {
-        gameState.mistakes++;
-        return {
-          valid: true,
-          action: 'wrong',
-          indices: [i1, i2, i3]
-        };
-      }
-    }
-
-    // Pair-based handling (Two-Digit, Escalating, Difference)
+    // Pair-based handling (Two-Digit, Century Sprint, Escalating, Difference)
     if (gameState.selectedIndex === null) {
       gameState.selectedIndex = cellIndex;
       return { valid: true, action: 'select' };
@@ -321,7 +268,7 @@ export const SumHuntMode = {
       // Difference Hunt
       isMatch = Math.abs(val1 - val2) === gameState.targetDiff;
     } else {
-      // Standard two-digit sum
+      // Two-digit clashes (0) and Century Sprint (1)
       isMatch = (val1 + val2 === gameState.targetSum);
     }
 
@@ -348,11 +295,7 @@ export const SumHuntMode = {
   },
 
   getTargetDisplay(gameState, challenge) {
-    if (gameState.variantIndex === 1) {
-      const currentSum = gameState.selectedIndices.reduce((sum, idx) => sum + gameState.cells[idx].value, 0);
-      const needed = gameState.targetSum - currentSum;
-      return `🎯 Target: ${gameState.targetSum} (Current: ${currentSum} | Need: ${needed})`;
-    } else if (gameState.variantIndex === 2) {
+    if (gameState.variantIndex === 2) {
       const currentTarget = gameState.stages[gameState.currentStageIndex];
       const leftInStage = 3 - gameState.pairsClearedInStage;
       return `🎯 Target: ${currentTarget} (${leftInStage} pair${leftInStage > 1 ? 's' : ''} left)`;
@@ -363,15 +306,12 @@ export const SumHuntMode = {
   },
 
   getProgress(gameState) {
-    if (gameState.variantIndex === 1) {
-      return `${gameState.clearedTrios}/${gameState.totalTrios} trios cleared`;
-    }
     return `${gameState.clearedPairs}/${gameState.totalPairs} pairs cleared`;
   },
 
   getStats(gameState, elapsedMs) {
-    const cleared = gameState.variantIndex === 1 ? gameState.clearedTrios : gameState.clearedPairs;
-    const total = gameState.variantIndex === 1 ? gameState.totalTrios : gameState.totalPairs;
+    const cleared = gameState.clearedPairs;
+    const total = gameState.totalPairs;
 
     const accuracy = cleared === 0 && gameState.mistakes === 0
       ? 100

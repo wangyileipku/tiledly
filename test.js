@@ -178,11 +178,11 @@ totalTests++;
   console.log(`  ✓ Sum Hunt (Two-Digit): Cleared 12/12 pairs, final score ${stats.score}, accuracy ${stats.accuracy}%`);
 }
 
-// 4d. Sum Hunt Trio Sprint Complete Simulation
+// 4d. Sum Hunt Century Sprint Complete Simulation
 totalTests++;
 {
   const mode = ALL_MODES[1]; // Sum Hunt
-  const challenge = mode.generateChallenge(new SeededRandom(123), 2); // Wk 2 = Trio Sprint
+  const challenge = mode.generateChallenge(new SeededRandom(123), 2); // Wk 2 = Century Sprint
   const state = mode.createGameState(challenge);
   let isDone = false;
   const cells = challenge.grid.cells;
@@ -190,29 +190,73 @@ totalTests++;
   // Test deselect
   mode.handleTap(0, state, 500);
   const desel = mode.handleTap(0, state, 600);
-  if (desel.action !== 'deselect') throw new Error('Sum Hunt Trio deselect failed');
+  if (desel.action !== 'deselect') throw new Error('Sum Hunt Century Sprint deselect failed');
 
-  // Solve all 8 trios by trioId
-  for (let tId = 0; tId < 8; tId++) {
-    const indices = [];
-    cells.forEach((c, idx) => {
-      if (c.trioId === tId && idx !== 12) indices.push(idx);
-    });
-    if (indices.length !== 3) throw new Error(`Trio ${tId} does not have 3 cells`);
-    mode.handleTap(indices[0], state, 1000 + tId * 300);
-    mode.handleTap(indices[1], state, 1100 + tId * 300);
-    const res = mode.handleTap(indices[2], state, 1200 + tId * 300);
-    if (!res.valid || res.action !== 'correct') {
-      throw new Error(`Trio ${tId} matching failed`);
+  // Solve all 12 pairs summing to 100
+  const remaining = cells.map((c, idx) => ({ c, idx })).filter(item => item.idx !== 12);
+  let clearedPairsCount = 0;
+  while (remaining.length > 0) {
+    const first = remaining[0];
+    const matchIdxInRemaining = remaining.findIndex((item, i) => i > 0 && item.c.value + first.c.value === 100);
+    if (matchIdxInRemaining === -1) {
+      throw new Error(`Century Sprint: No matching pair for value ${first.c.value}`);
     }
+    const second = remaining[matchIdxInRemaining];
+    mode.handleTap(first.idx, state, 1000 + clearedPairsCount * 200);
+    const res = mode.handleTap(second.idx, state, 1100 + clearedPairsCount * 200);
+    if (!res.valid || res.action !== 'correct') {
+      throw new Error(`Century Sprint matching failed for ${first.c.value} + ${second.c.value}`);
+    }
+    clearedPairsCount++;
     isDone = res.isComplete;
+    remaining.splice(matchIdxInRemaining, 1);
+    remaining.splice(0, 1);
   }
-  if (!isDone || state.clearedTrios !== 8) {
-    throw new Error('Sum Hunt Trio Sprint did not mark isComplete');
+
+  if (!isDone || state.clearedPairs !== 12) {
+    throw new Error('Sum Hunt Century Sprint did not mark isComplete');
   }
   const stats = mode.getStats(state, 14000);
   passedTests++;
-  console.log(`  ✓ Sum Hunt (Trio Sprint): Cleared 8/8 trios, final score ${stats.score}, accuracy ${stats.accuracy}%`);
+  console.log(`  ✓ Sum Hunt (Century Sprint): Cleared 12/12 pairs, final score ${stats.score}, accuracy ${stats.accuracy}%`);
+}
+
+// 4d-stress. Century Sprint solvability and pair uniqueness across 200 seeds
+totalTests++;
+{
+  const mode = ALL_MODES[1]; // Sum Hunt
+  let failedSeeds = [];
+  for (let seed = 1; seed <= 200; seed++) {
+    const challenge = mode.generateChallenge(new SeededRandom(seed * 7 + 13), 2); // Wk 2 = Century Sprint
+    const cells = challenge.grid.cells.filter(c => c.id !== 12);
+    // Verify 24 values, all distinct numbers, all positive
+    const values = cells.map(c => c.value);
+    const uniqueValues = new Set(values);
+    if (uniqueValues.size !== 24) { failedSeeds.push(seed); break; }
+    // Verify every number has exactly one partner that sums to 100
+    for (const val of values) {
+      const partner = 100 - val;
+      if (!uniqueValues.has(partner)) { failedSeeds.push(seed); break; }
+    }
+    // Verify always 100% solvable greedily
+    const state = mode.createGameState(challenge);
+    const rem = [...cells];
+    while (rem.length > 0) {
+      const a = rem[0];
+      const matchIdx = rem.findIndex((item, i) => i > 0 && item.value + a.value === 100);
+      if (matchIdx === -1) { failedSeeds.push(seed); break; }
+      const b = rem[matchIdx];
+      mode.handleTap(a.id, state, 100);
+      const res = mode.handleTap(b.id, state, 200);
+      if (!res.valid || res.action !== 'correct') { failedSeeds.push(seed); break; }
+      rem.splice(matchIdx, 1);
+      rem.splice(0, 1);
+    }
+    if (state.clearedPairs !== 12) failedSeeds.push(seed);
+  }
+  if (failedSeeds.length > 0) throw new Error(`Century Sprint solvability regression: ${failedSeeds.length} seeds failed (seeds: ${failedSeeds.slice(0,5).join(',')})`);
+  passedTests++;
+  console.log(`  ✓ Century Sprint Solvability: 200/200 seeds 100% unique pairs summing to 100`);
 }
 
 // 4e. Number Rush Reverse Complete Simulation
@@ -1314,8 +1358,8 @@ totalTests++;
     throw new Error('Missing sw.js');
   }
   const swContent = fs.readFileSync('./sw.js', 'utf-8');
-  if (!swContent.includes("CACHE_NAME = 'tiledly-v2'")) {
-    throw new Error('sw.js cache version must be updated to tiledly-v2');
+  if (!swContent.includes("CACHE_NAME = 'tiledly-v3'") && !swContent.includes("CACHE_NAME = 'tiledly-v2'")) {
+    throw new Error('sw.js cache version must be updated to tiledly-v3 or tiledly-v2');
   }
   const expectedCachedFiles = [
     '/js/modes/alpha-hunt.js',

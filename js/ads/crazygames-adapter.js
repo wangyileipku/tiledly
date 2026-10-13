@@ -12,9 +12,16 @@ export const CrazyGamesAdapter = {
     return window.CrazyGames?.SDK ?? null;
   },
 
-  init() {
+  async init() {
     if (!this._sdk) {
-      console.warn('[CrazyGames] SDK not loaded — ads will be skipped.');
+      console.warn('[CrazyGames] SDK script not loaded — running in offline/standalone mode.');
+      return;
+    }
+    try {
+      await this._sdk.init();
+      console.log('[CrazyGames] SDK v3 initialized successfully!');
+    } catch (err) {
+      console.warn('[CrazyGames] SDK init warning:', err);
     }
   },
 
@@ -29,7 +36,7 @@ export const CrazyGamesAdapter = {
 
       this._sdk.ad.requestAd('midgame', {
         adStarted: () => {
-          // Caller is responsible for pause/mute via AdAdapter.onAdStart hook
+          // Pause/mute hook if audio exists
         },
         adFinished: () => resolve(),
         adError: (_err) => resolve(), // always continue — ad may simply not fill
@@ -53,8 +60,18 @@ export const CrazyGamesAdapter = {
     });
   },
 
-  // Poki-style lifecycle methods are no-ops on CrazyGames
+  // Game lifecycle methods (tracked by CrazyGames for gameplay session analytics and load size)
   loadingFinished() {},
-  gameplayStart()   {},
-  gameplayStop()    {},
+  
+  gameplayStart() {
+    try {
+      this._sdk?.game?.gameplayStart();
+    } catch (_) {}
+  },
+  
+  gameplayStop() {
+    try {
+      this._sdk?.game?.gameplayStop();
+    } catch (_) {}
+  },
 };

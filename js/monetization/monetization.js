@@ -1,7 +1,7 @@
 import { MonetizationConfig } from './config.js';
 import { Storage } from '../storage.js';
 import { Analytics } from '../analytics.js';
-import { IS_STANDALONE, IS_POKI } from '../platform.js';
+import { IS_STANDALONE, IS_CRAZYGAMES, IS_POKI } from '../platform.js';
 
 const PRO_STORAGE_KEY = 'tiledly_is_pro';
 const PRO_EXPIRY_KEY = 'tiledly_pro_expiry';
@@ -459,8 +459,8 @@ export const Monetization = {
    * The server checks Redis where the Stripe webhook stored the payment confirmation.
    */
   async verifyProWithServer() {
-    if (IS_POKI) {
-      // Poki blocks external API requests completely
+    if (IS_POKI || IS_CRAZYGAMES) {
+      // Poki and CrazyGames block/flag external API requests — no Vercel backend available
       this._sessionVerified = true;
       return false;
     }
