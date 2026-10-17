@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Google Consent Mode v2 (Default Denied - GDPR / ePrivacy Compliant) -->
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('consent', 'default', {
+        'ad_storage': 'denied',
+        'ad_user_data': 'denied',
+        'ad_personalization': 'denied',
+        'analytics_storage': 'denied',
+        'region': [
+          'AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR',
+          'DE', 'GR', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL',
+          'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE', 'IS', 'LI', 'NO',
+          'GB', 'CH'
+        ],
+        'wait_for_update': 500
+      });
+      try {
+        var savedConsent = localStorage.getItem('tiledly_setting_cookie_consent');
+        if (savedConsent === '"all"' || savedConsent === 'all') {
+          gtag('consent', 'update', {
+            'ad_storage': 'granted',
+            'ad_user_data': 'granted',
+            'ad_personalization': 'granted',
+            'analytics_storage': 'granted'
+          });
+        }
+      } catch (_) {}
+    </script>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-L0NPW9E67F"></script>
+    <script>
+      gtag('js', new Date());
+      gtag('config', 'G-L0NPW9E67F');
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <meta name="description" content="Complete guide to playing Tiledly. Learn the rules, scoring, and strategy tips for all 7 daily game modes including Number Rush, Sum Hunt, Memory Grid, and more.">
+    <title>How to Play Tiledly — Daily Speed Challenge Guide</title>
+    <link rel="canonical" href="https://tiledly.com/how-to-play.html">
+    <meta property="og:title" content="How to Play Tiledly — Daily Speed Challenge Guide">
+    <meta property="og:description" content="Complete guide to playing Tiledly. Learn the rules, scoring, and strategy tips for all 7 daily game modes including Number Rush, Sum Hunt, Memory Grid, and more.">
+    <meta property="og:image" content="https://www.tiledly.com/og-image.png">
+    <meta property="og:url" content="https://tiledly.com/how-to-play.html">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="How to Play Tiledly — Daily Speed Challenge Guide">
+    <meta name="twitter:description" content="Complete guide to playing Tiledly. Learn the rules, scoring, and strategy tips for all 7 daily game modes including Number Rush, Sum Hunt, Memory Grid, and more.">
+    <meta name="twitter:image" content="https://www.tiledly.com/og-image.png">
+    <meta name="theme-color" content="#0a0a1a">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚡</text></svg>">
+    <link rel="stylesheet" href="css/style.css">
+    <!-- Google AdSense -->
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5198922883444706"
+         crossorigin="anonymous"></script>
+    <style>
+        .page-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 32px 20px 60px 20px;
+            color: rgba(255, 255, 255, 0.88);
+            line-height: 1.7;
+            font-size: 15px;
+            overflow-y: auto;
+            height: 100vh;
+        }
+        .page-header {
+            margin-bottom: 28px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 20px;
+        }
+        .page-header h1 {
+            font-size: 32px;
+            color: #00e5ff;
+            margin-bottom: 8px;
+        }
+        .page-meta {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.6);
+        }
+        .page-section {
+            margin-bottom: 32px;
+        }
+        .page-section h2 {
+            font-size: 20px;
+            color: #ffffff;
+            margin-bottom: 14px;
+            border-left: 3px solid #00e5ff;
+            padding-left: 10px;
+        }
+        .page-section p {
+            margin-bottom: 12px;
+        }
+        .mode-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 14px;
+            margin-top: 16px;
+            margin-bottom: 20px;
+        }
+        .mode-card {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 16px;
+            transition: transform 0.15s ease, border-color 0.15s ease;
+        }
+        .mode-card:hover {
+            border-color: #00e5ff;
+            transform: translateY(-2px);
+        }
+        .mode-card-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+        .mode-icon {
+            font-size: 24px;
+        }
+        .mode-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #ffffff;
+        }
+        .mode-day {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #00e5ff;
+            font-weight: bold;
+        }
+        .mode-desc {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.65);
+            line-height: 1.5;
+        }
+        .mode-tip {
+            font-size: 12px;
+            color: rgba(0, 229, 255, 0.75);
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+        }
+        .faq-item {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 10px;
+            padding: 16px;
+            margin-bottom: 12px;
+        }
+        .faq-question {
+            font-weight: 700;
+            color: #00e5ff;
+            margin-bottom: 6px;
+            font-size: 15px;
+        }
+        .faq-answer {
+            color: rgba(255, 255, 255, 0.75);
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        .btn-back-nav {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: #00e5ff;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 14px;
+            margin-bottom: 20px;
+            padding: 8px 14px;
+            border-radius: 8px;
+            background: rgba(0, 229, 255, 0.08);
+            border: 1px solid rgba(0, 229, 255, 0.2);
+            transition: all 0.2s ease;
+        }
+        .btn-back-nav:hover {
+            background: rgba(0, 229, 255, 0.16);
+            transform: translateY(-1px);
+        }
+        .tips-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .tips-list li {
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+            padding: 12px 14px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 10px;
+            margin-bottom: 10px;
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.8);
+            line-height: 1.6;
+        }
+        .tips-list li .tip-icon {
+            font-size: 20px;
+            flex-shrink: 0;
+            margin-top: 1px;
+        }
+        .score-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 12px;
+            font-size: 14px;
+        }
+        .score-table th {
+            text-align: left;
+            color: #00e5ff;
+            padding: 8px 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+        .score-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            color: rgba(255, 255, 255, 0.75);
+            vertical-align: top;
+        }
+        .score-table tr:last-child td {
+            border-bottom: none;
+        }
+        .info-callout {
+            background: rgba(0, 229, 255, 0.06);
+            border: 1px solid rgba(0, 229, 255, 0.18);
+            border-radius: 10px;
+            padding: 14px 16px;
+            margin-bottom: 16px;
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.8);
+            line-height: 1.6;
+        }
+        .nav-links {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="page-container">
+        <div class="nav-links">
+            <a href="index.html" class="btn-back-nav">← Back to Tiledly</a>
+            <a href="about.html" class="btn-back-nav">ℹ️ About &amp; FAQ</a>
+        </div>
+
+        <div class="page-header">
+            <h1>How to Play Tiledly</h1>
+            <div class="page-meta">Your complete guide to the daily speed challenge — rules, scoring, strategies, and more</div>
+        </div>
+
+        <div class="page-section">
+            <h2>What is Tiledly?</h2>
+            <p><strong>Tiledly</strong> is a fast-paced daily mental agility game played directly in your browser — no downloads or sign-ups required. Inspired by the daily ritual of games like <em>Wordle</em> and the adrenaline of reaction-speed tests, Tiledly serves up <strong>one shared challenge every day at midnight UTC</strong>. Every player worldwide sees the exact same seeded grid, so your time is a fair, direct comparison against thousands of global competitors.</p>
+            <p>The goal is simple: complete the puzzle as fast as possible with as few mistakes as you can manage. After finishing, you see exactly where you rank on the global leaderboard — and you can watch yourself race against 99 real players in the Battle Royale Replay.</p>
+        </div>
+
+        <div class="page-section">
+            <h2>The Basics</h2>
+            <div class="info-callout">
+                ⚡ <strong>One challenge per day.</strong> The grid resets every day at <strong>00:00 UTC</strong>. All players worldwide play the identical seeded board — your performance is directly comparable.
+            </div>
+            <ul style="padding-left: 20px; color: rgba(255,255,255,0.8);">
+                <li style="margin-bottom: 8px;"><strong>No account needed.</strong> Tiledly uses an anonymous persistent identifier stored in your browser. Your streak and personal bests are saved automatically.</li>
+                <li style="margin-bottom: 8px;"><strong>One attempt per day.</strong> Once you complete the daily challenge, your score is locked in. Use Practice Mode to keep playing without affecting your ranking.</li>
+                <li style="margin-bottom: 8px;"><strong>Global leaderboard.</strong> After completing the challenge, your percentile rank is calculated against all real human players who played that day.</li>
+                <li style="margin-bottom: 8px;"><strong>Streak tracking.</strong> Play on consecutive days to build your streak. Miss a day and it resets — unless you have PRO streak protection.</li>
+            </ul>
+        </div>
+
+        <div class="page-section">
+            <h2>Game Modes Explained</h2>
+            <p>Tiledly cycles through 7 core game modes — one per day of the week — across a 4-week rotation matrix (28 distinct challenges in total). Each mode targets different cognitive skills: arithmetic, working memory, visual scanning, spatial reasoning, and more.</p>
+
+            <div class="mode-grid">
+                <div class="mode-card">
+                    <div class="mode-day">Monday</div>
+                    <div class="mode-card-header">
+                        <span class="mode-icon">🧮</span>
+                        <div class="mode-title">Sum Hunt</div>
+                    </div>
+                    <div class="mode-desc">Find pairs or trios of tiles that add up to the displayed target sum. Tap all matching combinations as fast as possible before time pressure mounts.</div>
+                    <div class="mode-tip">💡 Tip: Scan for the highest and lowest numbers first — they're often part of the target pair.</div>
+                </div>
+
+                <div class="mode-card">
+                    <div class="mode-day">Tuesday</div>
+                    <div class="mode-card-header">
+                        <span class="mode-icon">🔢</span>
+                        <div class="mode-title">Number Rush</div>
+                    </div>
+                    <div class="mode-desc">Sprint through numbers 1 to 25 in ascending order (or 25 to 1 in countdown variants). Tests peripheral vision, visual scanning efficiency, and pure reaction speed.</div>
+                    <div class="mode-tip">💡 Tip: Don't chase the number — let your eyes scan the whole grid before each tap.</div>
+                </div>
+
+                <div class="mode-card">
+                    <div class="mode-day">Wednesday</div>
+                    <div class="mode-card-header">
+                        <span class="mode-icon">🎨</span>
+                        <div class="mode-title">Color Cascade</div>
+                    </div>
+                    <div class="mode-desc">Cycle through a repeating color sequence (Red → Orange → Yellow → Green → Blue) or navigate Stroop interference puzzles where the tile's text color conflicts with the word displayed.</div>
+                    <div class="mode-tip">💡 Tip: Focus on the ink color, not the word — your brain will try to read the word first.</div>
+                </div>
+
+                <div class="mode-card">
+                    <div class="mode-day">Thursday</div>
+                    <div class="mode-card-header">
+                        <span class="mode-icon">🧠</span>
+                        <div class="mode-title">Memory Grid</div>
+                    </div>
+                    <div class="mode-desc">You get 4 seconds to memorize all tile positions before they flip face-down to <code>?</code>. Then tap each number in the correct ascending sequence from pure working memory.</div>
+                    <div class="mode-tip">💡 Tip: Group tiles into quadrants during the memorize phase — don't try to memorize them one by one.</div>
+                </div>
+
+                <div class="mode-card">
+                    <div class="mode-day">Friday</div>
+                    <div class="mode-card-header">
+                        <span class="mode-icon">💣</span>
+                        <div class="mode-title">Minefield</div>
+                    </div>
+                    <div class="mode-desc">Hidden bomb tiles are briefly revealed before the game starts — memorize them! Then clear all safe numbers in ascending order without detonating a single bomb.</div>
+                    <div class="mode-tip">💡 Tip: Trace bomb locations in a mental map while memorizing, not just individual positions.</div>
+                </div>
+
+                <div class="mode-card">
+                    <div class="mode-day">Saturday</div>
+                    <div class="mode-card-header">
+                        <span class="mode-icon">⚡</span>
+                        <div class="mode-title">Math Blitz</div>
+                    </div>
+                    <div class="mode-desc">Rapid mental arithmetic — PEMDAS equations, multiplication tables, percentages, and answer-bucket classification — all under intense time pressure. Solve fast, tap the correct answer tile.</div>
+                    <div class="mode-tip">💡 Tip: Round tricky percentages to the nearest 10 to get a fast approximate answer first.</div>
+                </div>
+
+                <div class="mode-card">
+                    <div class="mode-day">Sunday</div>
+                    <div class="mode-card-header">
+                        <span class="mode-icon">🔤</span>
+                        <div class="mode-title">Alpha Hunt</div>
+                    </div>
+                    <div class="mode-desc">Locate and tap letters A through Y in alphabetical sequence, or spell out a hidden 5-letter theme word by finding its letters across the grid in the correct order.</div>
+                    <div class="mode-tip">💡 Tip: Mentally split the alphabet into thirds (A–H, I–P, Q–Y) to narrow your search zone fast.</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="page-section">
+            <h2>How Scoring Works</h2>
+            <p>Your Tiledly score is built from three components measured with high precision:</p>
+
+            <table class="score-table">
+                <thead>
+                    <tr>
+                        <th>Component</th>
+                        <th>How It's Measured</th>
+                        <th>Impact</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Elapsed Time</strong></td>
+                        <td>Millisecond precision using the browser's high-resolution <code>performance.now()</code> timer — starts on first tap, stops on final correct tile.</td>
+                        <td>Primary ranking factor. Lower is better.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Mistakes</strong></td>
+                        <td>Every incorrect tap is counted. Mistakes add a time penalty to your effective score.</td>
+                        <td>Each mistake inflates your score penalty — sometimes it's faster to be accurate than rapid.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Accuracy</strong></td>
+                        <td>Correct taps ÷ total taps, expressed as a percentage.</td>
+                        <td>Shown on the result screen and share card. Influences score multiplier.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Global Percentile</strong></td>
+                        <td>Your effective score ranked against all verified human completions for the day's puzzle.</td>
+                        <td><strong>Top 1%</strong> means you outperformed 99% of all players that day.</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <p style="margin-top: 14px;">Scores are collected throughout the day and the leaderboard is updated in real time. Your percentile will shift as more players complete the challenge.</p>
+        </div>
+
+        <div class="page-section">
+            <h2>Battle Royale Replay</h2>
+            <p>Once you finish the daily challenge, tap <strong>🎬 Watch Battle Replay</strong> to launch the Battle Royale Replay visualizer. This animated canvas simulation places your real run into a live 100-player race:</p>
+            <ul style="padding-left: 20px; color: rgba(255,255,255,0.8);">
+                <li style="margin-bottom: 8px;"><strong>Your avatar</strong> moves in real time based on your actual completion pace.</li>
+                <li style="margin-bottom: 8px;"><strong>99 other racers</strong> are generated from real global player data sampled from that day's leaderboard distribution.</li>
+                <li style="margin-bottom: 8px;"><strong>Elimination waves</strong> knock out slower players at regular intervals, narrowing the field to the final podium.</li>
+                <li style="margin-bottom: 8px;"><strong>PRO members</strong> get a golden crown on their avatar, making their racer easy to spot in the crowd.</li>
+            </ul>
+            <p>The Battle Royale is asynchronous — you're not playing live against others in real time, but the simulation is calibrated to real human performance data, so the race feels genuinely competitive.</p>
+        </div>
+
+        <div class="page-section">
+            <h2>Practice Mode</h2>
+            <p>Tap <strong>🎯 Practice Mode</strong> on the home screen at any time — before or after completing the daily challenge. Practice Mode generates an unlimited stream of randomly seeded boards using the current day's game mode rules.</p>
+            <ul style="padding-left: 20px; color: rgba(255,255,255,0.8);">
+                <li style="margin-bottom: 8px;">Practice runs <strong>never affect your daily ranking</strong> or streak.</li>
+                <li style="margin-bottom: 8px;">Great for warming up before the daily challenge or drilling a specific mode you find difficult.</li>
+                <li style="margin-bottom: 8px;">Your personal best practice time is tracked separately from your daily score.</li>
+                <li style="margin-bottom: 8px;">Available <strong>before and after</strong> completing the daily challenge.</li>
+            </ul>
+        </div>
+
+        <div class="page-section">
+            <h2>Tips &amp; Strategies</h2>
+            <ul class="tips-list">
+                <li>
+                    <span class="tip-icon">👁️</span>
+                    <div><strong>Scan the whole grid before your first tap.</strong> For Number Rush and Alpha Hunt, spending 0.5 seconds scanning for your first two targets saves far more time than diving in blindly and scanning tile-by-tile.</div>
+                </li>
+                <li>
+                    <span class="tip-icon">🎯</span>
+                    <div><strong>Accuracy beats raw speed.</strong> Each mistake adds a penalty to your effective score. On harder modes like Memory Grid and Minefield, a clean zero-mistake run will consistently outrank a faster but sloppy run.</div>
+                </li>
+                <li>
+                    <span class="tip-icon">🧠</span>
+                    <div><strong>Use spatial chunking for Memory Grid.</strong> During the 4-second memorize phase, mentally divide the grid into quadrants and assign 5–6 tiles to each zone rather than trying to memorize every position individually.</div>
+                </li>
+                <li>
+                    <span class="tip-icon">⚡</span>
+                    <div><strong>Build a daily routine.</strong> Playing at the same time each day (e.g., morning coffee) conditions your brain for peak performance and makes streak maintenance effortless.</div>
+                </li>
+                <li>
+                    <span class="tip-icon">🎮</span>
+                    <div><strong>Use Practice Mode to drill weak modes.</strong> If Math Blitz or Color Cascade consistently costs you rankings, spend 10 minutes in practice on those specific modes before the next occurrence.</div>
+                </li>
+                <li>
+                    <span class="tip-icon">📱</span>
+                    <div><strong>Install the app for faster load times.</strong> Add Tiledly to your home screen as a PWA for near-instant startup and a distraction-free full-screen experience — no browser bars eating into your peripheral vision.</div>
+                </li>
+            </ul>
+        </div>
+
+        <div class="page-section">
+            <h2>Frequently Asked Questions</h2>
+
+            <div class="faq-item">
+                <div class="faq-question">What time does the daily challenge reset?</div>
+                <div class="faq-answer">The challenge resets every day at <strong>00:00 UTC</strong> (Universal Coordinated Time). All players worldwide play the exact same grid on the same calendar day. Check your local UTC offset to know your exact reset time — for example, that's 8:00 PM Eastern US time in summer.</div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">Do I need an account or to sign in?</div>
+                <div class="faq-answer">No account is required. Tiledly uses an anonymous, persistent device identifier stored in your browser's local storage. Your streak, stats, and daily results are tracked automatically with no password or email sign-in needed. Clearing your browser data will reset your local stats.</div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">How is my streak tracked?</div>
+                <div class="faq-answer">Your streak increments by 1 each calendar day you complete the daily challenge before the next reset at 00:00 UTC. Miss a single day and your streak resets to 0 — unless you have <strong>Tiledly PRO</strong>, which includes automatic streak protection for missed days.</div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">What is Tiledly PRO and what does it include?</div>
+                <div class="faq-answer">Tiledly PRO is an optional supporter pass (monthly or one-time lifetime). PRO members get: <strong>no banner ads</strong>, <strong>full Daily Archive access</strong> to replay every past puzzle, a <strong>golden crown VIP avatar</strong> in the Battle Royale Replay, and <strong>automatic streak protection</strong> so one missed day won't break your streak.</div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">How do I share my result?</div>
+                <div class="faq-answer">On the results screen, tap <strong>📋 Share Result</strong>. Tiledly generates a spoiler-free share card showing your time, accuracy, percentile, and streak — no grid solution is revealed. You can copy it to clipboard and paste it anywhere, or use native sharing on mobile.</div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">Can I replay past challenges from the archive?</div>
+                <div class="faq-answer">Yes! Tap <strong>📅 Daily Archive</strong> on the home screen to browse every past daily challenge. <strong>Free users</strong> can view the archive list and see past scores. <strong>PRO members</strong> can replay any past puzzle in full and submit archive scores.</div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">Is a new mode released every day?</div>
+                <div class="faq-answer">Yes — a new challenge unlocks every day at midnight UTC. The game cycles through 7 core modes (one per day of the week) across a 4-week rotation, creating 28 unique variations before repeating. So you'll see Sum Hunt every Monday, but with a different seeded grid and target each week.</div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">Which browsers are supported?</div>
+                <div class="faq-answer">Tiledly works in all modern browsers: <strong>Chrome, Firefox, Safari, Edge</strong>, and any Chromium-based browser. It runs best on up-to-date versions. For the optimal experience on mobile, add Tiledly to your home screen as a PWA — this gives you a full-screen distraction-free mode with faster load times.</div>
+            </div>
+        </div>
+
+        <footer style="margin-top: 40px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); font-size: 13px; color: rgba(255,255,255,0.5);">
+            © 2026 Tiledly. All rights reserved. • <a href="about.html" style="color: #00e5ff;">About &amp; FAQ</a> • <a href="contact.html" style="color: #00e5ff;">Contact</a> • <a href="blog/" style="color: #00e5ff;">Blog</a> • <a href="privacy.html" style="color: #00e5ff;">Privacy Policy</a> • <a href="terms.html" style="color: #00e5ff;">Terms of Service</a>
+        </footer>
+    </div>
+</body>
+</html>

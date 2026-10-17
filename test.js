@@ -991,15 +991,18 @@ totalTests++;
     throw new Error('Ad slot was not suppressed for PRO member');
   }
 
-  // 2. When user is Free, ad slot should render house ad
+  // 2. When user is Free, ad slot should render ad unit (AdSense or house ad)
   Monetization.setPro(false);
   Monetization.renderAdSlot(mockContainer, 'result');
-  if (mockContainer.style.display !== 'block' || !mockContainer.innerHTML.includes('ad-house-card')) {
-    throw new Error('Ad slot failed to render fallback promo banner for free player');
+  const expectedClass = (Monetization.config.ads.provider === 'adsense' && Monetization.config.ads.adsenseClientId)
+    ? 'ad-adsense-wrapper'
+    : 'ad-house-card';
+  if (mockContainer.style.display !== 'block' || !mockContainer.innerHTML.includes(expectedClass)) {
+    throw new Error(`Ad slot failed to render expected ${expectedClass} for free player`);
   }
 
   passedTests++;
-  console.log('  ✓ Ad Slot Gating: Automatically suppresses ads for PRO and renders native banner for free players');
+  console.log('  ✓ Ad Slot Gating: Automatically suppresses ads for PRO and renders ad unit for free players');
 }
 
 // 9d. Streak Shield Protection
@@ -1358,8 +1361,8 @@ totalTests++;
     throw new Error('Missing sw.js');
   }
   const swContent = fs.readFileSync('./sw.js', 'utf-8');
-  if (!swContent.includes("CACHE_NAME = 'tiledly-v3'") && !swContent.includes("CACHE_NAME = 'tiledly-v2'")) {
-    throw new Error('sw.js cache version must be updated to tiledly-v3 or tiledly-v2');
+  if (!swContent.includes("CACHE_NAME = 'tiledly-v4'") && !swContent.includes("CACHE_NAME = 'tiledly-v3'") && !swContent.includes("CACHE_NAME = 'tiledly-v2'")) {
+    throw new Error('sw.js cache version must be updated to tiledly-v4, tiledly-v3 or tiledly-v2');
   }
   const expectedCachedFiles = [
     '/js/modes/alpha-hunt.js',

@@ -13,7 +13,7 @@ export const MonetizationConfig = {
     enabled: true,
     // 'mock' (shows native Tiledly PRO promo card / partner banner)
     // 'adsense' (loads Google AdSense auto/responsive units)
-    provider: 'mock',
+    provider: 'adsense',
 
     // Your Google AdSense Publisher ID (e.g. 'ca-pub-1234567890123456')
     adsenseClientId: 'ca-pub-5198922883444706',

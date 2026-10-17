@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Google Consent Mode v2 (Default Denied - GDPR / ePrivacy Compliant) -->
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('consent', 'default', {
+        'ad_storage': 'denied',
+        'ad_user_data': 'denied',
+        'ad_personalization': 'denied',
+        'analytics_storage': 'denied',
+        'region': [
+          'AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR',
+          'DE', 'GR', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL',
+          'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE', 'IS', 'LI', 'NO',
+          'GB', 'CH'
+        ],
+        'wait_for_update': 500
+      });
+      try {
+        var savedConsent = localStorage.getItem('tiledly_setting_cookie_consent');
+        if (savedConsent === '"all"' || savedConsent === 'all') {
+          gtag('consent', 'update', {
+            'ad_storage': 'granted',
+            'ad_user_data': 'granted',
+            'ad_personalization': 'granted',
+            'analytics_storage': 'granted'
+          });
+        }
+      } catch (_) {}
+    </script>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-L0NPW9E67F"></script>
+    <script>
+      gtag('js', new Date());
+      gtag('config', 'G-L0NPW9E67F');
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <meta name="description" content="Latest Tiledly news, game updates, strategy guides, and developer notes from the team behind the daily speed challenge.">
+    <title>Tiledly Blog — Game Updates, Tips &amp; Developer Notes</title>
+    <link rel="canonical" href="https://tiledly.com/blog/">
+    <meta property="og:title" content="Tiledly Blog — Game Updates, Tips &amp; Developer Notes">
+    <meta property="og:description" content="Latest Tiledly news, game updates, strategy guides, and developer notes from the team behind the daily speed challenge.">
+    <meta property="og:image" content="https://www.tiledly.com/og-image.png">
+    <meta property="og:url" content="https://tiledly.com/blog/">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Tiledly Blog — Game Updates, Tips &amp; Developer Notes">
+    <meta name="twitter:description" content="Latest Tiledly news, game updates, strategy guides, and developer notes from the team behind the daily speed challenge.">
+    <meta name="twitter:image" content="https://www.tiledly.com/og-image.png">
+    <meta name="theme-color" content="#0a0a1a">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚡</text></svg>">
+    <link rel="stylesheet" href="../css/style.css">
+    <!-- Google AdSense -->
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5198922883444706"
+         crossorigin="anonymous"></script>
+    <style>
+        .page-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 32px 20px 60px 20px;
+            color: rgba(255, 255, 255, 0.88);
+            line-height: 1.7;
+            font-size: 15px;
+            overflow-y: auto;
+            height: 100vh;
+        }
+        .page-header {
+            margin-bottom: 28px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 20px;
+        }
+        .page-header h1 {
+            font-size: 32px;
+            color: #00e5ff;
+            margin-bottom: 8px;
+        }
+        .page-meta {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.6);
+        }
+        .page-section {
+            margin-bottom: 32px;
+        }
+        .page-section h2 {
+            font-size: 20px;
+            color: #ffffff;
+            margin-bottom: 14px;
+            border-left: 3px solid #00e5ff;
+            padding-left: 10px;
+        }
+        .page-section p {
+            margin-bottom: 12px;
+        }
+        .btn-back-nav {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: #00e5ff;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 14px;
+            margin-bottom: 20px;
+            padding: 8px 14px;
+            border-radius: 8px;
+            background: rgba(0, 229, 255, 0.08);
+            border: 1px solid rgba(0, 229, 255, 0.2);
+            transition: all 0.2s ease;
+        }
+        .btn-back-nav:hover {
+            background: rgba(0, 229, 255, 0.16);
+            transform: translateY(-1px);
+        }
+        .blog-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+            margin-top: 8px;
+        }
+        .blog-card {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 24px;
+            transition: transform 0.15s ease, border-color 0.15s ease;
+        }
+        .blog-card:hover {
+            border-color: #00e5ff;
+            transform: translateY(-2px);
+        }
+        .blog-card-date {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #00e5ff;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        .blog-card h3 {
+            font-size: 20px;
+            color: #ffffff;
+            margin-bottom: 10px;
+            line-height: 1.4;
+        }
+        .blog-card p {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.65);
+            line-height: 1.6;
+            margin-bottom: 16px;
+        }
+        .blog-read-more {
+            color: #00e5ff;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 14px;
+            transition: opacity 0.2s ease;
+        }
+        .blog-read-more:hover {
+            opacity: 0.75;
+        }
+    </style>
+</head>
+<body>
+    <div class="page-container">
+        <a href="../index.html" class="btn-back-nav">← Back to Tiledly</a>
+
+        <div class="page-header">
+            <h1>Tiledly Blog</h1>
+            <div class="page-meta">Game updates, tips, and behind-the-scenes</div>
+        </div>
+
+        <div class="page-section">
+            <div class="blog-grid">
+
+                <div class="blog-card">
+                    <div class="blog-card-date">October 11, 2026</div>
+                    <h3>Tiledly v1.0 Launch Notes: 7 Modes, Global Leaderboard &amp; What's Next</h3>
+                    <p>The official launch of Tiledly is here. We're sharing everything that went into building all 7 daily game modes, how the global leaderboard percentile ranking works, and a first look at our roadmap for the months ahead.</p>
+                    <a href="tiledly-launch-notes.html" class="blog-read-more">Read More →</a>
+                </div>
+
+                <div class="blog-card">
+                    <div class="blog-card-date">October 8, 2026</div>
+                    <h3>Inside the Battle Royale Replay: How 100 Players Race in Real Time</h3>
+                    <p>Daily games are inherently solo — you play, you get a score, you share it. We wanted something more. Here's a deep dive into how the Battle Royale Replay generates 99 realistic ghost opponents from real anonymized global data to make your solo run feel like a live 100-player race.</p>
+                    <a href="how-battle-royale-replay-works.html" class="blog-read-more">Read More →</a>
+                </div>
+
+                <div class="blog-card">
+                    <div class="blog-card-date">October 5, 2026</div>
+                    <h3>Why We Built Tiledly: The Story Behind the Daily Speed Challenge</h3>
+                    <p>We loved daily games like Wordle. But we wanted something faster, more competitive, and more cognitively varied. This is the story of how Tiledly went from a frustration with the status quo to seven distinct game modes and a global leaderboard used by thousands of players every day.</p>
+                    <a href="why-we-built-tiledly.html" class="blog-read-more">Read More →</a>
+                </div>
+
+            </div>
+        </div>
+
+        <footer style="margin-top: 40px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); font-size: 13px; color: rgba(255,255,255,0.5);">
+            © 2026 Tiledly. All rights reserved. • <a href="../about.html" style="color: #00e5ff;">About &amp; FAQ</a> • <a href="../how-to-play.html" style="color: #00e5ff;">How to Play</a> • <a href="../contact.html" style="color: #00e5ff;">Contact</a> • <a href="../privacy.html" style="color: #00e5ff;">Privacy Policy</a> • <a href="../terms.html" style="color: #00e5ff;">Terms of Service</a>
+        </footer>
+    </div>
+</body>
+</html>
