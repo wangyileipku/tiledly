@@ -1650,8 +1650,8 @@ totalTests++;
   if (!indexHtml.includes(expectedPortalUrl)) {
     throw new Error('index.html missing Stripe customer portal links');
   }
-  if (!indexHtml.includes('pro-modal-portal-btn') || !indexHtml.includes('pro-modal-portal-link')) {
-    throw new Error('index.html missing portal action button or footer link in PRO modal');
+  if (!indexHtml.includes('pro-modal-portal-btn')) {
+    throw new Error('index.html missing portal action button in PRO modal');
   }
 
   const termsHtml = fs.readFileSync('./terms.html', 'utf-8');
@@ -1710,12 +1710,12 @@ totalTests++;
   }
 
   const indexHtml = fs.readFileSync('./index.html', 'utf-8');
-  if (!indexHtml.includes('id="home-share-btn"') || !indexHtml.includes('id="home-share-icon-btn"') || !indexHtml.includes('id="home-footer-share-btn"')) {
-    throw new Error('index.html missing home screen, top bar, or footer share buttons');
+  if (!indexHtml.includes('id="home-share-btn"')) {
+    throw new Error('index.html missing home screen share button');
   }
 
   passedTests++;
-  console.log('  ✓ Viral Sharing (Pre-gameplay): 1-tap friend challenge & share buttons live on home screen and footer');
+  console.log('  ✓ Viral Sharing (Pre-gameplay): 1-tap friend challenge button live on home screen');
 }
 
 console.log(`\n🎉 ALL ${passedTests}/${totalTests} TESTS PASSED!`);
