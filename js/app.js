@@ -50,6 +50,9 @@ async function init() {
   Analytics.trackPageView();
   Monetization.init();
   AdAdapter.loadingFinished();
+  // CrazyGames SDK requires at least one gameplayStart() before any midgame ad
+  // can be requested. The home/menu screen counts as the initial "active" state.
+  AdAdapter.gameplayStart();
 }
 
 function getBriefingRules(mode, challenge) {
@@ -126,6 +129,9 @@ function promptBriefing(isPractice = false, customConfig = null) {
   newStartBtn.addEventListener('click', async () => {
     modal.classList.add('hidden');
     if (!isPractice) {
+      // Signal menu/non-gameplay state to the SDK before requesting an ad.
+      // The SDK requires a gameplayStop() → requestAd() → gameplayStart() sequence.
+      AdAdapter.gameplayStop();
       await AdAdapter.showMidgame();
     }
     startCountdown(isPractice);

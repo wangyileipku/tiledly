@@ -26,9 +26,6 @@ export const CrazyGamesAdapter = {
       this._isInitialized = true;
       console.log('[CrazyGames] SDK v3 initialized successfully!');
 
-      // Start tracking game loading
-      this.loadingStart();
-
       // Read initial platform settings (muteAudio)
       if (this._sdk.game?.settings) {
         this._isAudioMuted = !!this._sdk.game.settings.muteAudio;
