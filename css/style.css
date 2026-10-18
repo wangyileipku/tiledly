@@ -568,17 +568,16 @@ button {
 }
 
 @media (min-width: 1024px) {
-    #app {
-        display: flex;
-        justify-content: center;
+    body {
         background-color: #050510;
     }
-    .screen {
+    #app {
         max-width: 480px;
         margin: 0 auto;
+        height: 100%;
         position: relative;
         background-color: #0a0a1a;
-        box-shadow: 0 0 40px rgba(0, 0, 0, 0.5);
+        box-shadow: 0 0 50px rgba(0, 0, 0, 0.6);
     }
 }
 
