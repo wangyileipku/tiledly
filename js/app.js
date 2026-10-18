@@ -324,26 +324,28 @@ function setupEventListeners() {
   });
 
   // -----------------------------------------------------------------------
-  // Arcade Mode Hub
+  // Arcade Mode Hub (Platforms only: CrazyGames & Poki)
   // -----------------------------------------------------------------------
-  const openArcadeModal = () => {
-    renderArcadeModal();
-    const modal = document.getElementById('modal-arcade');
-    if (modal) modal.classList.remove('hidden');
-  };
+  if (!IS_STANDALONE) {
+    const openArcadeModal = () => {
+      renderArcadeModal();
+      const modal = document.getElementById('modal-arcade');
+      if (modal) modal.classList.remove('hidden');
+    };
 
-  document.getElementById('home-arcade-btn')?.addEventListener('click', openArcadeModal);
-  document.getElementById('home-arcade-played-btn')?.addEventListener('click', openArcadeModal);
-  document.getElementById('result-arcade-btn')?.addEventListener('click', openArcadeModal);
+    document.getElementById('home-arcade-btn')?.addEventListener('click', openArcadeModal);
+    document.getElementById('home-arcade-played-btn')?.addEventListener('click', openArcadeModal);
+    document.getElementById('result-arcade-btn')?.addEventListener('click', openArcadeModal);
 
-  document.getElementById('arcade-close-btn')?.addEventListener('click', () => {
-    document.getElementById('modal-arcade')?.classList.add('hidden');
-  });
-  document.getElementById('modal-arcade')?.addEventListener('click', (e) => {
-    if (e.target === document.getElementById('modal-arcade')) {
-      document.getElementById('modal-arcade').classList.add('hidden');
-    }
-  });
+    document.getElementById('arcade-close-btn')?.addEventListener('click', () => {
+      document.getElementById('modal-arcade')?.classList.add('hidden');
+    });
+    document.getElementById('modal-arcade')?.addEventListener('click', (e) => {
+      if (e.target === document.getElementById('modal-arcade')) {
+        document.getElementById('modal-arcade').classList.add('hidden');
+      }
+    });
+  }
 
   // -----------------------------------------------------------------------
   // Replay Today's Daily Challenge (speedrun mode — no streak/result overwrite)
