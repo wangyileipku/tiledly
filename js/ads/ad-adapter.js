@@ -23,18 +23,41 @@ export const AdAdapter = {
   /**
    * Initialize the platform ad SDK. Call once on app startup.
    */
-  init() {
-    if (IS_CRAZYGAMES) CrazyGamesAdapter.init();
+  async init() {
+    if (IS_CRAZYGAMES) await CrazyGamesAdapter.init();
     if (IS_POKI)       PokiAdapter.init();
     // Standalone: nothing to do — AdSense loads via <script> in index.html
   },
 
   /**
+   * Signal that initial game loading has started.
+   */
+  loadingStart() {
+    if (IS_CRAZYGAMES) CrazyGamesAdapter.loadingStart();
+  },
+
+  /**
    * Signal that all game assets have loaded and the game is ready.
-   * Required by Poki; no-op on all other platforms.
+   * Forwarded to CrazyGames (loadingStop) and Poki (loadingFinished).
    */
   loadingFinished() {
-    if (IS_POKI) PokiAdapter.loadingFinished();
+    if (IS_CRAZYGAMES) CrazyGamesAdapter.loadingStop();
+    if (IS_POKI)       PokiAdapter.loadingFinished();
+  },
+
+  /**
+   * Trigger celebration fanfare/confetti on platforms supporting it (CrazyGames happytime).
+   */
+  happytime() {
+    if (IS_CRAZYGAMES) CrazyGamesAdapter.happytime();
+  },
+
+  /**
+   * Check if audio is muted by platform settings.
+   */
+  isAudioMuted() {
+    if (IS_CRAZYGAMES) return CrazyGamesAdapter.isAudioMuted();
+    return false;
   },
 
   /**

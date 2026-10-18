@@ -53,10 +53,8 @@ build_target() {
     rm -f "${TARGET_DIR}/sitemap.xml"
 
     # 5. Platform-specific pruning
-    if [[ "${TARGET}" == "poki" ]]; then
-        echo "→ Poki target: pruning serverless API folder to guarantee zero outgoing calls..."
-        rm -rf "${TARGET_DIR}/api"
-    fi
+    echo "→ Pruning serverless API folder to guarantee zero outgoing backend calls..."
+    rm -rf "${TARGET_DIR}/api"
 
     # 6. Verify entry point and platform flag
     if ! grep -q "export const PLATFORM = '${TARGET}';" "${TARGET_DIR}/js/platform.js"; then

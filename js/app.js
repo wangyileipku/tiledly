@@ -24,6 +24,7 @@ function showScreen(screenId) {
 }
 
 async function init() {
+  AdAdapter.loadingStart();
   const modeInfo = getModeInfo();
   document.getElementById('home-mode-emoji').textContent = modeInfo.emoji;
   document.getElementById('home-mode-name').textContent = modeInfo.name;
@@ -42,7 +43,7 @@ async function init() {
   }
   
   showScreen('screen-home');
-  AdAdapter.init();
+  await AdAdapter.init();
   Consent.init();
   Analytics.init();
   Analytics.trackPageView();
@@ -162,6 +163,7 @@ function setupEventListeners() {
   };
 
   document.getElementById('home-share-btn')?.addEventListener('click', handleShareGame);
+  document.getElementById('home-footer-share-btn')?.addEventListener('click', handleShareGame);
   
   // Daily Archive modal
   const archiveModal = document.getElementById('modal-archive');
@@ -744,14 +746,15 @@ function showResult(result) {
     }
   }
 
-  // Phase 6: Cross-promotion notice (Permitted on CrazyGames; strictly omitted on Poki)
+  // Trigger celebration on platforms supporting it (e.g. CrazyGames happytime)
+  if (result.percentile <= 15 || result.accuracy === 100) {
+    AdAdapter.happytime();
+  }
+
+  // Cross-promotion notice is strictly hidden on all platform distributions
   const platformPromoEl = document.getElementById('result-platform-promo');
   if (platformPromoEl) {
-    if (IS_CRAZYGAMES) {
-      platformPromoEl.classList.remove('hidden');
-    } else {
-      platformPromoEl.classList.add('hidden');
-    }
+    platformPromoEl.classList.add('hidden');
   }
   
   generateShareCard(result);
@@ -761,8 +764,10 @@ function showResult(result) {
     currentEngine = null;
   }
 
-  // Trigger retention PWA install prompt upon completing challenge if not installed yet
-  checkAndTriggerPwaPrompt();
+  // Retention PWA install prompt is exclusively for standalone browser visits
+  if (IS_STANDALONE) {
+    checkAndTriggerPwaPrompt();
+  }
 }
 
 /* ==========================================================================
@@ -914,5 +919,5 @@ function checkAndTriggerPwaPrompt() {
 document.addEventListener('DOMContentLoaded', () => {
   setupEventListeners();
   init();
-  initPwa();
+  if (IS_STANDALONE) initPwa();
 });
