@@ -1,3 +1,5 @@
+import { Sound } from './audio.js';
+
 export class GameEngine {
   constructor(gridContainerEl, timerEl) {
     this.gridContainerEl = gridContainerEl;
@@ -157,10 +159,12 @@ export class GameEngine {
     if (!cell) return;
     cell.element.classList.add(type);
     
-    if (type === 'correct' && navigator.vibrate) {
-      navigator.vibrate(10);
-    } else if (type === 'wrong' && navigator.vibrate) {
-      navigator.vibrate([30, 20, 30]);
+    if (type === 'correct') {
+      Sound.playTap();
+      if (navigator.vibrate) navigator.vibrate(10);
+    } else if (type === 'wrong') {
+      Sound.playError();
+      if (navigator.vibrate) navigator.vibrate([30, 20, 30]);
     }
 
     setTimeout(() => {

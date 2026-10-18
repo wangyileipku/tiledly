@@ -70,11 +70,16 @@ export const Storage = {
     if (history.length > 30) history.pop();
     safeStorage.setItem(`${PREFIX}history`, JSON.stringify(history));
 
-    const modeId = typeof result.mode === 'string' ? result.mode : (result.mode?.id || 'default');
+    this.savePersonalBest(result.mode, result);
+  },
+  savePersonalBest(mode, result) {
+    const modeId = typeof mode === 'string' ? mode : (mode?.id || 'default');
     const pb = this.getPersonalBest(modeId);
-    if (!pb || result.score > pb.score) {
+    if (!pb || (result.score && result.score > (pb.score || 0))) {
       safeStorage.setItem(`${PREFIX}pb_${modeId}`, JSON.stringify(result));
+      return true;
     }
+    return false;
   },
   getTodayResult() {
     const today = getFormattedDate();

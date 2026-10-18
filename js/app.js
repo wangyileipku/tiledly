@@ -1,6 +1,6 @@
 import { Storage } from './storage.js';
 import { Analytics } from './analytics.js';
-import { getTodayMode, getTodayChallenge, getModeInfo, getDailyNumber, ALL_MODES, getArchiveDays } from './daily.js';
+import { getTodayMode, getTodayChallenge, getModeInfo, getDailyNumber, ALL_MODES, ALL_MODES_LIST, getArchiveDays } from './daily.js';
 import { GameEngine } from './engine.js';
 import { getDailySeed, SeededRandom, formatTime, formatNumber, delay, getWeekOfYear } from './utils.js';
 import { generateShareCard, shareResult, shareGame } from './share.js';
@@ -9,6 +9,7 @@ import { Monetization } from './monetization/monetization.js';
 import { Consent } from './consent.js';
 import { AdAdapter } from './ads/ad-adapter.js';
 import { IS_STANDALONE, IS_CRAZYGAMES, IS_POKI } from './platform.js';
+import { Sound } from './audio.js';
 
 let currentEngine = null;
 let currentMode = null;
@@ -192,6 +193,7 @@ function setupEventListeners() {
   document.getElementById('game-peek-btn').addEventListener('click', () => {
     if (!currentMode || !currentMode.handlePeek || !currentGameState || !currentEngine) return;
 
+    Sound.playRadar();
     currentMode.handlePeek(currentGameState);
 
     if (currentMode.id === 'minefield') {
@@ -314,6 +316,68 @@ function setupEventListeners() {
     if (replayInstance) replayInstance.stop();
     showScreen('screen-result');
   });
+
+  // -----------------------------------------------------------------------
+  // Arcade Mode Hub
+  // -----------------------------------------------------------------------
+  const openArcadeModal = () => {
+    renderArcadeModal();
+    const modal = document.getElementById('modal-arcade');
+    if (modal) modal.classList.remove('hidden');
+  };
+
+  document.getElementById('home-arcade-btn')?.addEventListener('click', openArcadeModal);
+  document.getElementById('home-arcade-played-btn')?.addEventListener('click', openArcadeModal);
+  document.getElementById('result-arcade-btn')?.addEventListener('click', openArcadeModal);
+
+  document.getElementById('arcade-close-btn')?.addEventListener('click', () => {
+    document.getElementById('modal-arcade')?.classList.add('hidden');
+  });
+  document.getElementById('modal-arcade')?.addEventListener('click', (e) => {
+    if (e.target === document.getElementById('modal-arcade')) {
+      document.getElementById('modal-arcade').classList.add('hidden');
+    }
+  });
+
+  // -----------------------------------------------------------------------
+  // Replay Today's Daily Challenge (speedrun mode — no streak/result overwrite)
+  // -----------------------------------------------------------------------
+  document.getElementById('home-replay-daily-btn')?.addEventListener('click', () => {
+    // Replay today's puzzle as a practice run (isPractice=true preserves today's saved result)
+    currentMode = getTodayMode();
+    const dailyChal = getTodayChallenge();
+    currentChallenge = dailyChal.challenge;
+    promptBriefing(true, {
+      title: `Speedrun: ${currentChallenge.variantName || currentMode.name}`,
+      badge: '🔁 Speedrun',
+      desc: `Beat your time from today's challenge! ${currentMode.description}`
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // Sound Toggle Buttons (home + in-game)
+  // -----------------------------------------------------------------------
+  const updateSoundBtns = (isSoundOn) => {
+    const icon = isSoundOn ? '🔊' : '🔇';
+    const label = isSoundOn ? 'Sound On' : 'Sound Off';
+    document.querySelectorAll('#home-sound-btn, #game-sound-btn').forEach(btn => {
+      if (btn) {
+        btn.textContent = icon;
+        btn.title = label;
+        btn.setAttribute('aria-label', `Toggle Sound (currently ${label})`);
+      }
+    });
+  };
+
+  // Initialise button icons from saved preference
+  updateSoundBtns(!Sound.userMuted);
+
+  document.querySelectorAll('#home-sound-btn, #game-sound-btn').forEach(btn => {
+    btn?.addEventListener('click', () => {
+      const isOn = Sound.toggleMute();
+      updateSoundBtns(isOn);
+    });
+  });
 }
 
 function openArchiveModal() {
@@ -396,6 +460,60 @@ function closeArchiveModal() {
   if (modal) modal.classList.add('hidden');
 }
 
+/* ==========================================================================
+   Arcade Mode Hub — Phase 2
+   Lets players choose any of the 7 modes at any time, preserving daily
+   challenge streak integrity (runs as isPractice=true).
+   ========================================================================== */
+
+function renderArcadeModal() {
+  const listEl = document.getElementById('arcade-modes-list');
+  if (!listEl) return;
+
+  listEl.innerHTML = '';
+
+  ALL_MODES_LIST.forEach(({ mode, tag, desc }) => {
+    const pb = Storage.getPersonalBest(mode.id);
+    const pbText = pb ? `🏅 Best: ${formatTime(pb.time)} · ${pb.score.toLocaleString()} pts` : 'No runs yet';
+
+    const card = document.createElement('div');
+    card.className = 'arcade-card';
+    card.innerHTML = `
+      <div class="arcade-card-left">
+        <span class="arcade-emoji" aria-hidden="true">${mode.emoji}</span>
+        <div>
+          <div style="font-weight: 700; font-size: 15px; color: #fff;">${mode.name}</div>
+          <span class="arcade-tag-badge">${tag}</span>
+          <div style="font-size: 12px; color: #a0a0c0; margin-top: 3px;">${desc}</div>
+          <div style="font-size: 11px; color: #ffcc00; margin-top: 4px;">${pbText}</div>
+        </div>
+      </div>
+      <button class="btn-arcade-play" aria-label="Play ${mode.name}">Play ▶</button>
+    `;
+
+    card.querySelector('.btn-arcade-play').addEventListener('click', () => {
+      document.getElementById('modal-arcade')?.classList.add('hidden');
+      startArcadeMode(mode);
+    });
+
+    listEl.appendChild(card);
+  });
+}
+
+function startArcadeMode(mode) {
+  // Pick a random week seed so the grid is fresh each play
+  const randomWeek = Math.floor(Math.random() * 52) + 1;
+  const rng = new SeededRandom(Date.now() ^ (Math.random() * 0xffffffff | 0));
+  currentMode = mode;
+  currentChallenge = mode.generateChallenge(rng, randomWeek);
+
+  promptBriefing(true, {
+    title: mode.name,
+    badge: '🎮 Arcade Mode',
+    desc: currentChallenge.variantDescription || mode.description
+  });
+}
+
 async function startArchiveChallenge(archiveDay) {
   closeArchiveModal();
 
@@ -447,12 +565,16 @@ async function startCountdown(isPractice = false) {
   }
   
   cdNum.textContent = '3';
+  Sound.playCountdown(false);
   await delay(800);
   cdNum.textContent = '2';
+  Sound.playCountdown(false);
   await delay(800);
   cdNum.textContent = '1';
+  Sound.playCountdown(false);
   await delay(800);
   cdNum.textContent = 'GO!';
+  Sound.playCountdown(true);
   await delay(400);
   
   currentGameState = currentMode.createGameState(currentChallenge);
@@ -701,9 +823,13 @@ async function endGame(isPractice) {
     Storage.saveTodayResult(result);
     Storage.updateStreak();
     result.streak = Storage.getStreak().current;
+  } else {
+    // Save personal best for arcade/practice runs so the Arcade modal can show PBs
+    Storage.savePersonalBest(result.mode, result);
   }
   
   Analytics.trackGameComplete(result);
+  Sound.playVictory();
   showResult(result);
 }
 

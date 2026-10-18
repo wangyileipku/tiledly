@@ -25,6 +25,16 @@ export const ALL_MODES = {
   6: MathBlitzMode
 };
 
+export const ALL_MODES_LIST = [
+  { mode: NumberRushMode, tag: 'Reflex Sprint', desc: 'Tap numbers 1 to 25 in fast sequence' },
+  { mode: SumHuntMode, tag: 'Mental Math', desc: 'Find tile pairs that combine to target numbers' },
+  { mode: ColorCascadeMode, tag: 'Visual Agility', desc: 'Stroop cognitive test: match font color rhythm' },
+  { mode: MemoryGridMode, tag: 'Working Memory', desc: 'Memorize the grid in 4s, tap all tiles from memory' },
+  { mode: MinefieldMode, tag: 'Risk & Speed', desc: 'Clear safe numbers 1 to 20 while dodging 5 bombs' },
+  { mode: MathBlitzMode, tag: 'Calculation', desc: 'Solve arithmetic equations in order of answers' },
+  { mode: AlphaHuntMode, tag: 'Alphabet Sprint', desc: 'Hunt letters A through Y in rapid alphabetical order' },
+];
+
 export function getTodayMode(date = new Date()) {
   const day = getDayOfWeek(date);
   return ALL_MODES[day] || SumHuntMode;

@@ -1206,6 +1206,126 @@ button {
     filter: brightness(1.1);
 }
 
+/* Sound Toggle Button */
+.btn-sound-toggle {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: #ffffff;
+    font-size: 14px;
+    padding: 6px 10px;
+    border-radius: 16px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s, border-color 0.15s;
+    user-select: none;
+    line-height: 1;
+}
+
+.btn-sound-toggle:hover {
+    background: rgba(255, 255, 255, 0.18);
+    border-color: rgba(0, 229, 255, 0.4);
+}
+
+/* Arcade Mode Selector Modal & Cards */
+.arcade-card {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 12px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.arcade-card:hover {
+    border-color: rgba(0, 229, 255, 0.4);
+    background: rgba(255, 255, 255, 0.08);
+    transform: translateY(-1px);
+}
+
+.arcade-card-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+    min-width: 0;
+}
+
+.arcade-emoji {
+    font-size: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 36px;
+}
+
+.arcade-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.arcade-title-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.arcade-mode-name {
+    font-size: 15px;
+    font-weight: 700;
+    color: #ffffff;
+}
+
+.arcade-tag-badge {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #00e5ff;
+    background: rgba(0, 229, 255, 0.12);
+    border: 1px solid rgba(0, 229, 255, 0.25);
+    padding: 1px 6px;
+    border-radius: 6px;
+    letter-spacing: 0.5px;
+}
+
+.arcade-mode-desc {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.6);
+    line-height: 1.35;
+}
+
+.arcade-pb {
+    font-size: 11px;
+    color: #00ff88;
+    margin-top: 2px;
+}
+
+.btn-arcade-play {
+    background: #00e5ff;
+    color: #0a0a1a;
+    font-weight: 700;
+    font-size: 12px;
+    padding: 8px 16px;
+    border-radius: 14px;
+    border: none;
+    cursor: pointer;
+    transition: transform 0.15s, background 0.15s;
+    white-space: nowrap;
+    margin-left: 10px;
+}
+
+.btn-arcade-play:hover {
+    background: #33edff;
+    transform: scale(1.05);
+}
+
 
 
 
