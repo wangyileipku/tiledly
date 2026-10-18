@@ -16,8 +16,8 @@ export const Analytics = {
       pixelId: 'XXXXXXXXXX'
     },
     googleAds: {
-      enabled: false,
-      conversionId: 'AW-XXXXXXXXXX'
+      enabled: true,
+      conversionId: 'AW-16767546094'
     }
   },
 
@@ -67,16 +67,18 @@ export const Analytics = {
     }
 
     if (hasConsent && this.config.googleAds.enabled) {
-      const script = document.createElement('script');
-      script.async = true;
-      script.src = `https://www.googletagmanager.com/gtag/js?id=${this.config.googleAds.conversionId}`;
-      document.head.appendChild(script);
+      if (typeof window.gtag !== 'function') {
+        const script = document.createElement('script');
+        script.async = true;
+        script.src = `https://www.googletagmanager.com/gtag/js?id=${this.config.googleAds.conversionId}`;
+        document.head.appendChild(script);
 
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      window.gtag = window.gtag || gtag;
-      gtag('js', new Date());
-      gtag('config', this.config.googleAds.conversionId);
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        window.gtag = window.gtag || gtag;
+        gtag('js', new Date());
+        gtag('config', this.config.googleAds.conversionId);
+      }
     }
 
     // Lightweight client runtime error capture for ad campaign traffic
