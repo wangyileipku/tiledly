@@ -1197,6 +1197,86 @@ totalTests++;
   console.log('  ✓ Anti-Spoofing (Issue 6): Blocked direct localStorage manipulation; verified session via server token');
 }
 
+// 9i. Purchase Complete Event Tracking
+totalTests++;
+{
+  const { Analytics } = await import('./js/analytics.js');
+  const capturedEvents = [];
+  let fbqCall = null;
+  let ttqCall = null;
+
+  global.window = global.window || {};
+  global.window.gtag = (type, eventName, params) => {
+    capturedEvents.push({ type, eventName, params });
+  };
+  global.window.fbq = (action, eventName, params) => {
+    fbqCall = { action, eventName, params };
+  };
+  global.window.ttq = {
+    track: (eventName, params) => {
+      ttqCall = { eventName, params };
+    }
+  };
+
+  // 1. Test trackPurchaseComplete with plan string
+  Analytics.trackPurchaseComplete('monthly');
+  const ga4Purchase = capturedEvents.find(e => e.eventName === 'purchase');
+  const customComplete = capturedEvents.find(e => e.eventName === 'purchase_complete');
+
+  if (!ga4Purchase || ga4Purchase.params.value !== 2.99 || ga4Purchase.params.currency !== 'USD') {
+    throw new Error(`GA4 purchase event missing or invalid: ${JSON.stringify(ga4Purchase)}`);
+  }
+  if (!customComplete || customComplete.params.plan_type !== 'monthly') {
+    throw new Error(`purchase_complete event missing or invalid: ${JSON.stringify(customComplete)}`);
+  }
+  if (!fbqCall || fbqCall.eventName !== 'Purchase' || fbqCall.params.value !== 2.99) {
+    throw new Error(`Meta pixel Purchase event failed: ${JSON.stringify(fbqCall)}`);
+  }
+  if (!ttqCall || ttqCall.eventName !== 'CompletePayment' || ttqCall.params.value !== 2.99) {
+    throw new Error(`TikTok pixel CompletePayment event failed: ${JSON.stringify(ttqCall)}`);
+  }
+
+  // 2. Test lifetime pass with object details & alias trackPurchase
+  capturedEvents.length = 0;
+  Analytics.trackPurchase({ plan: 'lifetime', value: 9.99, transactionId: 'sess_test_123' });
+  const lifetimePurchase = capturedEvents.find(e => e.eventName === 'purchase');
+  if (!lifetimePurchase || lifetimePurchase.params.value !== 9.99 || lifetimePurchase.params.transaction_id !== 'sess_test_123') {
+    throw new Error(`Lifetime purchase tracking failed: ${JSON.stringify(lifetimePurchase)}`);
+  }
+
+  // 3. Verify all 4 Google Ads conversions
+  capturedEvents.length = 0;
+  Analytics.trackGameStart({ name: 'Speed Run' });
+  const gameStartConversion = capturedEvents.find(e => e.eventName === 'conversion' && e.params?.send_to === 'AW-16767546094/UCxACO3_16cdEO7lsbs-');
+  if (!gameStartConversion) {
+    throw new Error('Google Ads conversion for Game start missing');
+  }
+
+  capturedEvents.length = 0;
+  Analytics.trackGameComplete({ time: 5000, score: 9000, accuracy: 100, mode: { name: 'Speed Run' }, percentile: 1 });
+  const gameCompleteConversion = capturedEvents.find(e => e.eventName === 'conversion' && e.params?.send_to === 'AW-16767546094/kn4XCImT5qcdEO7lsbs-');
+  if (!gameCompleteConversion) {
+    throw new Error('Google Ads conversion for Game complete missing');
+  }
+
+  capturedEvents.length = 0;
+  Analytics.trackCheckoutInitiated('monthly');
+  const purchaseStartConversion = capturedEvents.find(e => e.eventName === 'conversion' && e.params?.send_to === 'AW-16767546094/VVBRCPu05qcdEO7lsbs-');
+  if (!purchaseStartConversion || purchaseStartConversion.params?.transaction_id !== '') {
+    throw new Error('Google Ads conversion for Purchase start missing or invalid');
+  }
+
+  capturedEvents.length = 0;
+  Analytics.trackPurchaseComplete({ plan: 'monthly', transactionId: 'tx_monthly_999' });
+  const purchaseCompleteConversion = capturedEvents.find(e => e.eventName === 'conversion' && e.params?.send_to === 'AW-16767546094/LIuwCPjH46cdEO7lsbs-');
+  if (!purchaseCompleteConversion || purchaseCompleteConversion.params?.value !== 2.99 || purchaseCompleteConversion.params?.transaction_id !== 'tx_monthly_999') {
+    throw new Error('Google Ads conversion for Purchase complete missing or invalid');
+  }
+
+  passedTests++;
+  console.log('  ✓ Purchase & Google Ads Tracking: Emits GA4/Ads purchase, purchase_complete, and 4 Google Ads conversion snippets');
+}
+
 // Test 10: Full Daily Archive Functionality
 console.log('\n📅 Running Full Daily Archive Tests...');
 import { getArchiveDays } from './js/daily.js';

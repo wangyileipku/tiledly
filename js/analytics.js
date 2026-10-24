@@ -17,7 +17,13 @@ export const Analytics = {
     },
     googleAds: {
       enabled: true,
-      conversionId: 'AW-16767546094'
+      conversionId: 'AW-16767546094',
+      conversions: {
+        gameStart: 'AW-16767546094/UCxACO3_16cdEO7lsbs-',
+        gameComplete: 'AW-16767546094/kn4XCImT5qcdEO7lsbs-',
+        purchaseStart: 'AW-16767546094/VVBRCPu05qcdEO7lsbs-',
+        purchaseComplete: 'AW-16767546094/LIuwCPjH46cdEO7lsbs-'
+      }
     }
   },
 
@@ -121,8 +127,20 @@ export const Analytics = {
     }
   },
 
+  trackGoogleAdsConversion(conversionSendTo, params = {}) {
+    if (IS_POKI) return;
+    if (!this.config.googleAds?.enabled || !conversionSendTo) return;
+    if (typeof window !== 'undefined' && typeof window.gtag === 'function') {
+      window.gtag('event', 'conversion', {
+        send_to: conversionSendTo,
+        ...params
+      });
+    }
+  },
+
   trackGameStart(mode) {
     this.trackEvent('game_start', { mode_name: mode ? mode.name : 'unknown' });
+    this.trackGoogleAdsConversion(this.config.googleAds.conversions.gameStart);
   },
 
   trackGameComplete(result) {
@@ -133,6 +151,7 @@ export const Analytics = {
       mode: result.mode.name,
       percentile: result.percentile
     });
+    this.trackGoogleAdsConversion(this.config.googleAds.conversions.gameComplete);
   },
 
   trackShareClicked(method = 'unknown') {
@@ -145,6 +164,75 @@ export const Analytics = {
 
   trackCheckoutInitiated(plan) {
     this.trackEvent('checkout_initiated', { plan_type: plan });
+    this.trackGoogleAdsConversion(this.config.googleAds.conversions.purchaseStart, {
+      transaction_id: ''
+    });
+  },
+
+  trackPurchaseComplete(details = {}) {
+    const opts = typeof details === 'string' ? { plan: details } : (details || {});
+    const plan = opts.plan || 'monthly';
+    const value = typeof opts.value === 'number' ? opts.value : (plan === 'lifetime' ? 9.99 : 2.99);
+    const currency = opts.currency || 'USD';
+    const transactionId = opts.transactionId || opts.sessionId || opts.token || `pro_${Date.now()}`;
+
+    const purchaseParams = {
+      transaction_id: transactionId,
+      value: value,
+      currency: currency,
+      plan_type: plan,
+      items: [
+        {
+          item_id: `tiledly_pro_${plan}`,
+          item_name: plan === 'lifetime' ? 'Tiledly PRO Lifetime Pass' : 'Tiledly PRO Monthly Pass',
+          price: value,
+          quantity: 1
+        }
+      ]
+    };
+
+    // 1. Standard GA4 & Google Ads purchase event
+    this.trackEvent('purchase', purchaseParams);
+
+    // 2. Custom purchase_complete event matching checkout_initiated
+    this.trackEvent('purchase_complete', {
+      plan_type: plan,
+      value: value,
+      currency: currency,
+      transaction_id: transactionId
+    });
+
+    // 3. Google Ads Purchase Complete conversion snippet
+    this.trackGoogleAdsConversion(this.config.googleAds.conversions.purchaseComplete, {
+      value: value,
+      currency: currency,
+      transaction_id: transactionId
+    });
+
+    // 4. Meta Pixel standard Purchase event
+    if (typeof window !== 'undefined' && typeof window.fbq === 'function') {
+      window.fbq('track', 'Purchase', {
+        value: value,
+        currency: currency,
+        content_name: plan === 'lifetime' ? 'Tiledly PRO Lifetime Pass' : 'Tiledly PRO Monthly Pass',
+        content_type: 'product'
+      });
+    }
+
+    // 5. TikTok Pixel standard CompletePayment event
+    if (typeof window !== 'undefined' && typeof window.ttq !== 'undefined' && typeof window.ttq.track === 'function') {
+      window.ttq.track('CompletePayment', {
+        content_type: 'product',
+        content_id: `tiledly_pro_${plan}`,
+        content_name: plan === 'lifetime' ? 'Tiledly PRO Lifetime Pass' : 'Tiledly PRO Monthly Pass',
+        currency: currency,
+        value: value
+      });
+    }
+  },
+
+  trackPurchase(details) {
+    this.trackPurchaseComplete(details);
   },
 
   trackPwaPromptViewed() {

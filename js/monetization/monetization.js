@@ -415,12 +415,17 @@ export const Monetization = {
       const isReturningFromCheckout = url.searchParams.get('pro') === 'success' || 
                                      url.searchParams.get('checkout') === 'complete' ||
                                      url.searchParams.get('session_id') !== null;
+      const checkoutSessionId = url.searchParams.get('session_id') || null;
+      const checkoutPlan = url.searchParams.get('plan') || null;
 
       if (isReturningFromCheckout) {
         // Clean URL parameters
         url.searchParams.delete('pro');
         url.searchParams.delete('checkout');
         url.searchParams.delete('session_id');
+        if (url.searchParams.has('plan')) {
+          url.searchParams.delete('plan');
+        }
         window.history.replaceState({}, document.title, url.pathname + (url.search ? url.search : ''));
       }
 
@@ -442,7 +447,29 @@ export const Monetization = {
           await new Promise(r => setTimeout(r, 1500));
         }
 
-        if (!verified) {
+        if (verified) {
+          const proDetails = this.getProDetails();
+          const plan = checkoutPlan || proDetails.plan || 'monthly';
+          const token = Storage.getSetting('pro_token', null);
+          const dedupeKey = checkoutSessionId || token || `purchase_${plan}_${Storage.getDeviceId()}`;
+
+          let alreadyTracked = false;
+          try {
+            if (typeof sessionStorage !== 'undefined') {
+              alreadyTracked = !!sessionStorage.getItem(`tiledly_tracked_${dedupeKey}`);
+              if (!alreadyTracked) {
+                sessionStorage.setItem(`tiledly_tracked_${dedupeKey}`, '1');
+              }
+            }
+          } catch (_) {}
+
+          if (!alreadyTracked) {
+            Analytics.trackPurchaseComplete({
+              plan,
+              transactionId: checkoutSessionId || token || undefined
+            });
+          }
+        } else {
           console.warn('Stripe webhook not yet received or still processing.');
         }
       } else {
