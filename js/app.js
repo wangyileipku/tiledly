@@ -711,13 +711,15 @@ function handleCellTap(index, cellData, isPractice) {
     } else if (result.indices) {
       currentEngine.deselectAll();
       result.indices.forEach(i => currentEngine.highlightCell(i, 'correct'));
+      const engineRef = currentEngine;
       setTimeout(() => {
-        result.indices.forEach(i => currentEngine.clearCell(i));
+        if (engineRef) result.indices.forEach(i => engineRef.clearCell(i));
       }, 250);
     } else {
       currentEngine.highlightCell(index, 'correct');
+      const engineRef = currentEngine;
       setTimeout(() => {
-        currentEngine.clearCell(index);
+        if (engineRef) engineRef.clearCell(index);
       }, 200);
     }
   } else if (result.action === 'wrong') {
